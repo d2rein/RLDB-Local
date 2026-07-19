@@ -1,0 +1,171 @@
+name: Weekly Data Refresh
+
+on:
+  workflow_dispatch:
+  # Scheduled GitHub refresh disabled on 2026-07-13.
+  # The live site now refreshes via the local Windows scheduled task and
+  # hidden hybrid backend/tunnel on the host PC. Keeping this workflow
+  # manually runnable preserves it as a future fallback without wasting
+  # GitHub Actions runs or sending weekly failure emails for the retired
+  # cloud-first path.
+  # schedule:
+  #   - cron: "0 18 * * 0"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NRL_DATA_ROOT_OVERRIDE: ${{ github.workspace }}/docs/NRL-Data-main_duplicate/data/NRL
+      NRLW_DATA_ROOT_OVERRIDE: ${{ github.workspace }}/docs/NRL-Data-main_duplicate/data/NRLW
+      D1_REMOTE_SEED_HEARTBEAT_MS: 10000
+      WRANGLER_NPX_PACKAGE: wrangler@4.83.0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare workflow logs
+        run: mkdir -p .github/logs
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python scraper dependencies
+        run: |
+          set -euxo pipefail
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 selenium chromedriver-autoinstaller pandas numpy 2>&1 | tee .github/logs/01_python_dependencies.log
+        shell: bash
+
+      - name: Install Chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Refresh recent NRL rounds from NRL.com
+        working-directory: ./docs/NRL-Data-main_duplicate/scraping
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          set -euxo pipefail
+          python refresh_recent_rounds.py --selection NRL --year 2026 --recent-round-count 2 --lookahead-rounds 2 2>&1 | tee ../../../.github/logs/02_refresh_recent_rounds.log
+        shell: bash
+
+      - name: Refresh recent NRLW rounds from NRL.com
+        working-directory: ./docs/NRL-Data-main_duplicate/scraping
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.chrome-path }}
+        run: |
+          set -euxo pipefail
+          python refresh_recent_rounds.py --selection NRLW --year 2026 --recent-round-count 2 --lookahead-rounds 2 2>&1 | tee ../../../.github/logs/02b_refresh_recent_nrlw_rounds.log
+        shell: bash
+
+      - name: Install dependencies
+        working-directory: .
+        run: |
+          set -euxo pipefail
+          npm install 2>&1 | tee .github/logs/03_npm_install.log
+        shell: bash
+
+      - name: Sync master match backbone
+        working-directory: .
+        run: |
+          set -euxo pipefail
+          npm run matches:sync-nrl-backbone 2>&1 | tee .github/logs/04_sync_match_backbone.log
+        shell: bash
+
+      - name: Build refreshed seed assets
+        working-directory: .
+        run: |
+          set -euxo pipefail
+          npm run seed:reference 2>&1 | tee .github/logs/05_seed_reference.log
+          npm run seed:core 2>&1 | tee .github/logs/06_seed_core_bundle.log
+          npm run seed:core-sql 2>&1 | tee .github/logs/07_seed_core_sql.log
+          npm run seed:legacy-sql 2>&1 | tee .github/logs/08_seed_legacy_sql.log
+          npm run seed:player-stats-sql 2>&1 | tee .github/logs/09_seed_player_aggregates.log
+          npm run seed:match-summaries-sql 2>&1 | tee .github/logs/10_seed_match_summaries.log
+          node ./scripts/apply-local-d1-sqlite.mjs 2>&1 | tee .github/logs/11_apply_local_d1.log
+          npm run seed:current-season-refresh 2>&1 | tee .github/logs/12_build_current_season_refresh.log
+        shell: bash
+
+      - name: Apply remote current-season refresh
+        working-directory: .
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          D1_DATABASE_BINDING: rl_stats_db
+          D1_REMOTE_SEED_START_AT: 0100_current_season_refresh_2026.sql
+        run: |
+          set -euxo pipefail
+          node ./scripts/apply-remote-d1.mjs 2>&1 | tee .github/logs/13_apply_remote_current_season_refresh.log
+        shell: bash
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: .
+
+      - name: Verify legacy data survived refresh
+        run: |
+          set -euxo pipefail
+          node --input-type=module <<'EOF' 2>&1 | tee .github/logs/14_verify_legacy_data.log
+          const checks = [
+            {
+              name: "team margin legacy history",
+              url: "https://rugby-league-stats-database.d2-rein.workers.dev/api/query?scope=team&competition=NRL&statKey=margin&mode=totals&format=match&seasonFrom=1908&seasonTo=2026&team=Any&opponent=Any&venue=Any&referee=Any&position=Any&player=Any&playerType=any&matchPlayer=Any&debut=any&groundCondition=Any&weatherCondition=Any&homeAway=any&result=any&allowMultipleStreaks=0&excludeSparseHistoricalStreaks=1&roundFrom=1&roundTo=33&includeRegular=1&includeFinals=1&includeGrandFinal=1&conditions=%5B%5D&limit=5",
+              validate(payload) {
+                return Array.isArray(payload.rows) && payload.rows.some((row) => Number(row.season) < 1998);
+              },
+            },
+            {
+              name: "player legacy history",
+              url: "https://rugby-league-stats-database.d2-rein.workers.dev/api/query?scope=player&competition=NRL&statKey=tries&mode=totals&format=overall&seasonFrom=1908&seasonTo=2026&team=Any&opponent=Any&venue=Any&referee=Any&position=Any&player=Andrew%20Ettingshausen&playerType=any&matchPlayer=Any&debut=any&groundCondition=Any&weatherCondition=Any&homeAway=any&result=any&allowMultipleStreaks=0&excludeSparseHistoricalStreaks=1&roundFrom=1&roundTo=33&includeRegular=1&includeFinals=1&includeGrandFinal=1&conditions=%5B%5D&limit=20",
+              validate(payload) {
+                return Array.isArray(payload.rows) && payload.rows.some((row) => String(row.player) === "Andrew Ettingshausen" && Number(row.first_season) < 1998);
+              },
+            },
+          ];
+
+          for (const check of checks) {
+            const response = await fetch(check.url);
+            if (!response.ok) {
+              throw new Error(`${check.name} failed with HTTP ${response.status}`);
+            }
+            const payload = await response.json();
+            if (!payload.ok || !check.validate(payload)) {
+              throw new Error(`${check.name} did not return expected legacy data`);
+            }
+            console.log(`verified: ${check.name}`);
+          }
+          EOF
+        shell: bash
+
+      - name: Write workflow summary
+        if: always()
+        run: |
+          {
+            echo "Workflow finished at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo "Brisbane schedule: Monday 04:00 AEST"
+            echo "Current-season refresh artifact: seed/0100_current_season_refresh_2026.sql"
+            echo "Legacy data verification: completed"
+          } | tee .github/logs/14_workflow_summary.log
+        shell: bash
+
+      - name: Upload weekly refresh logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-refresh-logs
+          path: |
+            .github/logs
+            seed/0100_current_season_refresh_2026.sql
+            docs/NRL-Data-main_duplicate/scraping/missing_player_matches_2026.csv
+            docs/NRL-Data-main_duplicate/scraping/missing_player_matches_NRLW_2026.csv
+          if-no-files-found: warn

@@ -1,0 +1,1448 @@
+scope,season,stat_key,stat_name,row_count,min_value,p10_value,median_value,p90_value,max_value,max_vs_median_ratio
+player,1998,40_20,40/20,27,1,1,1,1,2,2.000
+player,1998,conversions,Conversions,521,1,1,3,5,10,3.333
+player,1998,errors,Errors,3908,1,1,1,2,10,10.000
+player,1998,field_goals_1pt,1 Point Field Goals,29,1,1,1,1,2,2.000
+player,1998,line_breaks,Line Breaks,2738,1,1,1,2,5,5.000
+player,1998,missed_tackles,Missed Tackles,5381,1,1,1,3,8,8.000
+player,1998,offloads,Offloads,4647,1,1,1,4,19,19.000
+player,1998,send_offs,Send Offs,17,1,1,1,1,1,1.000
+player,1998,sin_bins,Sin Bins,63,1,1,1,1,1,1.000
+player,1998,tackles_made,Tackles Made,8503,1,4,14,26,46,3.286
+player,1998,tries,Tries,1506,1,1,1,2,4,4.000
+player,1999,40_20,40/20,55,1,1,1,1,2,2.000
+player,1999,conversions,Conversions,462,1,1,2,5,10,5.000
+player,1999,errors,Errors,3463,1,1,1,2,7,7.000
+player,1999,field_goals_1pt,1 Point Field Goals,30,1,1,1,1,2,2.000
+player,1999,line_breaks,Line Breaks,2330,1,1,1,2,6,6.000
+player,1999,missed_tackles,Missed Tackles,5136,1,1,2,4,10,5.000
+player,1999,offloads,Offloads,4033,1,1,1,4,12,12.000
+player,1999,penalty_goals,Penalty Goals,1,1,1,1,1,1,1.000
+player,1999,send_offs,Send Offs,9,1,1,1,1,1,1.000
+player,1999,sin_bins,Sin Bins,81,1,1,1,1,1,1.000
+player,1999,tackles_made,Tackles Made,7168,1,5,15,26,51,3.400
+player,1999,tries,Tries,1294,1,1,1,2,4,4.000
+player,1999,try_assists,Try Assists,703,1,1,1,2,4,4.000
+player,2000,40_20,40/20,40,1,1,1,1,1,1.000
+player,2000,all_run_metres,All Run Metres,6531,1,29,74,137,279,3.770
+player,2000,conversions,Conversions,420,1,1,3,5,9,3.000
+player,2000,errors,Errors,2951,1,1,1,2,7,7.000
+player,2000,field_goals_1pt,1 Point Field Goals,15,1,1,1,1,1,1.000
+player,2000,line_breaks,Line Breaks,1708,1,1,1,2,5,5.000
+player,2000,missed_tackles,Missed Tackles,4894,1,1,2,4,12,6.000
+player,2000,offloads,Offloads,3619,1,1,1,3,9,9.000
+player,2000,penalty_goals,Penalty Goals,1,2,2,2,2,2,1.000
+player,2000,send_offs,Send Offs,8,1,1,1,1,1,1.000
+player,2000,sin_bins,Sin Bins,53,1,1,1,1,1,1.000
+player,2000,tackles_made,Tackles Made,6510,1,4,15,27,54,3.600
+player,2000,tries,Tries,1183,1,1,1,2,4,4.000
+player,2000,try_assists,Try Assists,669,1,1,1,2,4,4.000
+player,2001,40_20,40/20,40,1,1,1,1,2,2.000
+player,2001,all_run_metres,All Run Metres,6439,1,27,69,132,288,4.174
+player,2001,conversions,Conversions,445,1,1,3,6,11,3.667
+player,2001,errors,Errors,2878,1,1,1,2,6,6.000
+player,2001,field_goals_1pt,1 Point Field Goals,1,1,1,1,1,1,1.000
+player,2001,line_breaks,Line Breaks,1754,1,1,1,2,6,6.000
+player,2001,minutes_played,Minutes Played,6460,1,32,67,80,80,1.194
+player,2001,missed_tackles,Missed Tackles,4874,1,1,2,4,11,5.500
+player,2001,offloads,Offloads,3818,1,1,2,4,9,4.500
+player,2001,one_on_one_lost,One on One Lost,47,1,1,1,1,1,1.000
+player,2001,one_on_one_steal,One on One Steal,47,1,1,1,1,1,1.000
+player,2001,penalty_goals,Penalty Goals,1,2,2,2,2,2,1.000
+player,2001,send_offs,Send Offs,3,1,1,1,1,1,1.000
+player,2001,sin_bins,Sin Bins,29,1,1,1,1,1,1.000
+player,2001,stint_one,Stint One,6460,1,32,67,80,80,1.194
+player,2001,tackles_made,Tackles Made,6433,1,5,15,26,52,3.467
+player,2001,tries,Tries,1343,1,1,1,2,4,4.000
+player,2001,try_assists,Try Assists,648,1,1,1,2,4,4.000
+player,2002,40_20,40/20,33,1,1,1,1,1,1.000
+player,2002,all_run_metres,All Run Metres,6370,1,27,70,135,273,3.900
+player,2002,conversions,Conversions,416,1,1,3,6,12,4.000
+player,2002,errors,Errors,2778,1,1,1,2,6,6.000
+player,2002,field_goals_1pt,1 Point Field Goals,4,1,1,1,1,1,1.000
+player,2002,line_break_assists,Line Break Assists,517,1,1,1,1,4,4.000
+player,2002,line_breaks,Line Breaks,1712,1,1,1,2,5,5.000
+player,2002,minutes_played,Minutes Played,6395,1,31,66,80,80,1.212
+player,2002,missed_tackles,Missed Tackles,4938,1,1,2,4,12,6.000
+player,2002,offloads,Offloads,3496,1,1,1,3,10,10.000
+player,2002,one_on_one_lost,One on One Lost,61,1,1,1,1,1,1.000
+player,2002,one_on_one_steal,One on One Steal,61,1,1,1,1,1,1.000
+player,2002,send_offs,Send Offs,5,1,1,1,1,1,1.000
+player,2002,sin_bins,Sin Bins,34,1,1,1,1,2,2.000
+player,2002,stint_one,Stint One,6395,1,31,66,80,80,1.212
+player,2002,tackles_made,Tackles Made,6357,1,5,16,28,53,3.313
+player,2002,tries,Tries,1345,1,1,1,2,5,5.000
+player,2002,try_assists,Try Assists,626,1,1,1,2,4,4.000
+player,2003,40_20,40/20,43,1,1,1,1,1,1.000
+player,2003,all_run_metres,All Run Metres,6377,1,29,74,137,292,3.946
+player,2003,conversions,Conversions,410,1,1,3,6,11,3.667
+player,2003,errors,Errors,3156,1,1,1,3,7,7.000
+player,2003,field_goals_1pt,1 Point Field Goals,26,1,1,1,1,2,2.000
+player,2003,ineffective_tackles,Ineffective Tackles,4086,1,1,2,4,9,4.500
+player,2003,kicking_metres,Kicking Metres,1822,1,10,50,357,726,14.520
+player,2003,kicks,Kicks,1838,1,1,2,11,24,12.000
+player,2003,line_break_assists,Line Break Assists,711,1,1,1,2,4,4.000
+player,2003,line_breaks,Line Breaks,1599,1,1,1,2,5,5.000
+player,2003,minutes_played,Minutes Played,6396,1,35,71,80,89,1.254
+player,2003,missed_tackles,Missed Tackles,5076,1,1,2,4,12,6.000
+player,2003,offloads,Offloads,3169,1,1,1,3,10,10.000
+player,2003,one_on_one_lost,One on One Lost,72,1,1,1,1,2,2.000
+player,2003,one_on_one_steal,One on One Steal,72,1,1,1,1,2,2.000
+player,2003,send_offs,Send Offs,6,1,1,1,1,1,1.000
+player,2003,sin_bins,Sin Bins,41,1,1,1,1,1,1.000
+player,2003,stint_one,Stint One,6396,1,35,71,80,89,1.254
+player,2003,tackle_breaks,Tackle Breaks,4363,1,1,2,4,11,5.500
+player,2003,tackles_made,Tackles Made,6365,1,5,17,30,52,3.059
+player,2003,tries,Tries,1294,1,1,1,2,5,5.000
+player,2003,try_assists,Try Assists,899,1,1,1,2,4,4.000
+player,2004,40_20,40/20,35,1,1,1,1,2,2.000
+player,2004,all_run_metres,All Run Metres,6384,1,30,76,141,345,4.539
+player,2004,conversions,Conversions,410,1,1,3,6,11,3.667
+player,2004,errors,Errors,3230,1,1,1,3,7,7.000
+player,2004,field_goals_1pt,1 Point Field Goals,27,1,1,1,1,2,2.000
+player,2004,ineffective_tackles,Ineffective Tackles,4202,1,1,2,4,8,4.000
+player,2004,kicking_metres,Kicking Metres,1807,1,10,50,336,828,16.560
+player,2004,kicks,Kicks,1823,1,1,2,11,22,11.000
+player,2004,line_break_assists,Line Break Assists,656,1,1,1,2,4,4.000
+player,2004,line_breaks,Line Breaks,1538,1,1,1,2,4,4.000
+player,2004,minutes_played,Minutes Played,6405,1,31,67,80,90,1.343
+player,2004,missed_tackles,Missed Tackles,5177,1,1,2,4,12,6.000
+player,2004,offloads,Offloads,3256,1,1,1,3,14,14.000
+player,2004,one_on_one_lost,One on One Lost,84,1,1,1,1,1,1.000
+player,2004,one_on_one_steal,One on One Steal,83,1,1,1,1,2,2.000
+player,2004,penalty_goals,Penalty Goals,1,1,1,1,1,1,1.000
+player,2004,send_offs,Send Offs,4,1,1,1,1,1,1.000
+player,2004,sin_bins,Sin Bins,35,1,1,1,1,1,1.000
+player,2004,stint_one,Stint One,6405,1,31,67,80,90,1.343
+player,2004,tackle_breaks,Tackle Breaks,4348,1,1,2,4,13,6.500
+player,2004,tackles_made,Tackles Made,6364,1,5,17,31,60,3.529
+player,2004,tries,Tries,1338,1,1,1,2,4,4.000
+player,2004,try_assists,Try Assists,879,1,1,1,2,5,5.000
+player,2005,40_20,40/20,43,1,1,1,1,2,2.000
+player,2005,all_run_metres,All Run Metres,6393,1,30,78,143,283,3.628
+player,2005,conversions,Conversions,423,1,1,3,5,10,3.333
+player,2005,errors,Errors,3211,1,1,1,2,7,7.000
+player,2005,field_goals_1pt,1 Point Field Goals,29,1,1,1,1,1,1.000
+player,2005,ineffective_tackles,Ineffective Tackles,4260,1,1,2,4,8,4.000
+player,2005,kicking_metres,Kicking Metres,1732,1,10,58,333,780,13.448
+player,2005,kicks,Kicks,1752,1,1,2,11,21,10.500
+player,2005,line_break_assists,Line Break Assists,833,1,1,1,2,5,5.000
+player,2005,line_breaks,Line Breaks,1632,1,1,1,2,4,4.000
+player,2005,minutes_played,Minutes Played,6392,1,31,67,80,90,1.343
+player,2005,missed_tackles,Missed Tackles,5291,1,1,2,5,15,7.500
+player,2005,offloads,Offloads,3237,1,1,1,3,9,9.000
+player,2005,one_on_one_lost,One on One Lost,65,1,1,1,1,1,1.000
+player,2005,one_on_one_steal,One on One Steal,65,1,1,1,1,2,2.000
+player,2005,send_offs,Send Offs,2,1,1,1,1,1,1.000
+player,2005,sin_bins,Sin Bins,30,1,1,1,1,1,1.000
+player,2005,stint_one,Stint One,6392,1,31,67,80,90,1.343
+player,2005,tackle_breaks,Tackle Breaks,4611,1,1,2,4,14,7.000
+player,2005,tackles_made,Tackles Made,6372,1,5,17,31,57,3.353
+player,2005,tries,Tries,1334,1,1,1,2,3,3.000
+player,2005,try_assists,Try Assists,848,1,1,1,2,5,5.000
+player,2006,40_20,40/20,29,1,1,1,1,1,1.000
+player,2006,all_run_metres,All Run Metres,6382,1,29,77,140,346,4.494
+player,2006,conversions,Conversions,406,1,1,3,5,11,3.667
+player,2006,errors,Errors,3078,1,1,1,2,6,6.000
+player,2006,field_goals_1pt,1 Point Field Goals,7,1,1,1,1,1,1.000
+player,2006,ineffective_tackles,Ineffective Tackles,4054,1,1,2,3,8,4.000
+player,2006,kicking_metres,Kicking Metres,1689,1,12,66,357,815,12.348
+player,2006,kicks,Kicks,1711,1,1,2,11,22,11.000
+player,2006,line_break_assists,Line Break Assists,836,1,1,1,2,4,4.000
+player,2006,line_breaks,Line Breaks,1577,1,1,1,2,5,5.000
+player,2006,minutes_played,Minutes Played,6417,1,31,67,80,90,1.343
+player,2006,missed_tackles,Missed Tackles,5322,1,1,2,5,13,6.500
+player,2006,offloads,Offloads,2933,1,1,1,3,9,9.000
+player,2006,one_on_one_lost,One on One Lost,49,1,1,1,1,2,2.000
+player,2006,one_on_one_steal,One on One Steal,51,1,1,1,1,2,2.000
+player,2006,penalty_goals,Penalty Goals,2,1,1,1,1,1,1.000
+player,2006,send_offs,Send Offs,4,1,1,1,1,1,1.000
+player,2006,sin_bins,Sin Bins,41,1,1,1,1,1,1.000
+player,2006,stint_one,Stint One,6417,1,31,67,80,90,1.343
+player,2006,tackle_breaks,Tackle Breaks,4707,1,1,2,6,15,7.500
+player,2006,tackles_made,Tackles Made,6384,1,5,17,32,65,3.824
+player,2006,tries,Tries,1229,1,1,1,2,4,4.000
+player,2006,try_assists,Try Assists,827,1,1,1,2,4,4.000
+player,2007,40_20,40/20,49,1,1,1,1,1,1.000
+player,2007,all_run_metres,All Run Metres,6787,1,28,75,138,323,4.307
+player,2007,conversions,Conversions,413,1,1,3,5,9,3.000
+player,2007,errors,Errors,3278,1,1,1,2,6,6.000
+player,2007,field_goals_1pt,1 Point Field Goals,35,1,1,1,1,1,1.000
+player,2007,ineffective_tackles,Ineffective Tackles,4079,1,1,1,3,8,8.000
+player,2007,kicking_metres,Kicking Metres,1805,1,11,71,325,661,9.310
+player,2007,kicks,Kicks,1816,1,1,2,10,21,10.500
+player,2007,line_break_assists,Line Break Assists,898,1,1,1,2,4,4.000
+player,2007,line_breaks,Line Breaks,1545,1,1,1,2,4,4.000
+player,2007,minutes_played,Minutes Played,6821,1,32,67,80,90,1.343
+player,2007,missed_tackles,Missed Tackles,5575,1,1,2,5,15,7.500
+player,2007,offloads,Offloads,2885,1,1,1,3,8,8.000
+player,2007,one_on_one_lost,One on One Lost,63,1,1,1,1,1,1.000
+player,2007,one_on_one_steal,One on One Steal,64,1,1,1,1,1,1.000
+player,2007,send_offs,Send Offs,5,1,1,1,1,1,1.000
+player,2007,sin_bins,Sin Bins,21,1,1,1,1,1,1.000
+player,2007,stint_one,Stint One,6821,1,32,67,80,90,1.343
+player,2007,tackle_breaks,Tackle Breaks,4962,1,1,2,6,18,9.000
+player,2007,tackles_made,Tackles Made,6781,1,5,18,32,71,3.944
+player,2007,tries,Tries,1250,1,1,1,2,4,4.000
+player,2007,try_assists,Try Assists,872,1,1,1,2,5,5.000
+player,2008,40_20,40/20,41,1,1,1,1,1,1.000
+player,2008,all_run_metres,All Run Metres,6781,1,27,74,133,293,3.959
+player,2008,conversions,Conversions,422,1,1,3,5,10,3.333
+player,2008,errors,Errors,3135,1,1,1,2,6,6.000
+player,2008,field_goals_1pt,1 Point Field Goals,31,1,1,1,1,1,1.000
+player,2008,ineffective_tackles,Ineffective Tackles,3997,1,1,1,3,8,8.000
+player,2008,kicking_metres,Kicking Metres,1738,1,12,69,336,809,11.725
+player,2008,kicks,Kicks,1750,1,1,2,11,22,11.000
+player,2008,line_break_assists,Line Break Assists,895,1,1,1,2,4,4.000
+player,2008,line_breaks,Line Breaks,1468,1,1,1,2,4,4.000
+player,2008,minutes_played,Minutes Played,6823,2,30,70,80,90,1.286
+player,2008,missed_tackles,Missed Tackles,5519,1,1,2,5,13,6.500
+player,2008,offloads,Offloads,2822,1,1,1,3,8,8.000
+player,2008,one_on_one_lost,One on One Lost,40,1,1,1,1,1,1.000
+player,2008,one_on_one_steal,One on One Steal,41,1,1,1,1,1,1.000
+player,2008,send_offs,Send Offs,6,1,1,1,1,1,1.000
+player,2008,sin_bins,Sin Bins,14,1,1,1,1,1,1.000
+player,2008,stint_one,Stint One,6823,2,30,70,80,90,1.286
+player,2008,tackle_breaks,Tackle Breaks,4921,1,1,2,6,20,10.000
+player,2008,tackles_made,Tackles Made,6783,1,5,18,32,61,3.389
+player,2008,tries,Tries,1288,1,1,1,2,4,4.000
+player,2008,try_assists,Try Assists,938,1,1,1,2,5,5.000
+player,2009,40_20,40/20,51,1,1,1,1,2,2.000
+player,2009,all_run_metres,All Run Metres,6788,1,28,74,131,328,4.432
+player,2009,conversions,Conversions,398,1,1,3,5,9,3.000
+player,2009,errors,Errors,3172,1,1,1,2,6,6.000
+player,2009,field_goals_1pt,1 Point Field Goals,35,1,1,1,1,1,1.000
+player,2009,ineffective_tackles,Ineffective Tackles,4159,1,1,1,3,9,9.000
+player,2009,kicking_metres,Kicking Metres,1843,1,11,65,333,869,13.369
+player,2009,kicks,Kicks,1854,1,1,2,11,24,12.000
+player,2009,line_break_assists,Line Break Assists,954,1,1,1,2,6,6.000
+player,2009,line_breaks,Line Breaks,1507,1,1,1,2,4,4.000
+player,2009,minutes_played,Minutes Played,6823,1,30,70,80,90,1.286
+player,2009,missed_tackles,Missed Tackles,5464,1,1,2,5,11,5.500
+player,2009,offloads,Offloads,3026,1,1,1,3,9,9.000
+player,2009,one_on_one_lost,One on One Lost,35,1,1,1,1,1,1.000
+player,2009,one_on_one_steal,One on One Steal,35,1,1,1,1,1,1.000
+player,2009,send_offs,Send Offs,2,1,1,1,1,1,1.000
+player,2009,sin_bins,Sin Bins,29,1,1,1,1,1,1.000
+player,2009,stint_one,Stint One,6823,1,30,70,80,90,1.286
+player,2009,tackle_breaks,Tackle Breaks,4851,1,1,2,6,17,8.500
+player,2009,tackles_made,Tackles Made,6773,1,4,18,33,78,4.333
+player,2009,tries,Tries,1240,1,1,1,2,4,4.000
+player,2009,try_assists,Try Assists,953,1,1,1,2,6,6.000
+player,2010,40_20,40/20,43,1,1,1,1,2,2.000
+player,2010,all_run_metres,All Run Metres,6784,1,28,74,135,291,3.932
+player,2010,conversions,Conversions,399,1,1,3,6,9,3.000
+player,2010,errors,Errors,3254,1,1,1,2,6,6.000
+player,2010,field_goals_1pt,1 Point Field Goals,36,1,1,1,1,2,2.000
+player,2010,ineffective_tackles,Ineffective Tackles,4075,1,1,1,3,9,9.000
+player,2010,kicking_metres,Kicking Metres,1767,1,11,64,332,923,14.422
+player,2010,kicks,Kicks,1772,1,1,2,10,24,12.000
+player,2010,line_break_assists,Line Break Assists,932,1,1,1,2,5,5.000
+player,2010,line_breaks,Line Breaks,1468,1,1,1,2,4,4.000
+player,2010,minutes_played,Minutes Played,6819,1,29,72,80,100,1.389
+player,2010,missed_tackles,Missed Tackles,5538,1,1,2,5,18,9.000
+player,2010,offloads,Offloads,3041,1,1,1,3,7,7.000
+player,2010,one_on_one_lost,One on One Lost,53,1,1,1,1,2,2.000
+player,2010,one_on_one_steal,One on One Steal,54,1,1,1,1,1,1.000
+player,2010,penalty_goals,Penalty Goals,1,1,1,1,1,1,1.000
+player,2010,send_offs,Send Offs,1,1,1,1,1,1,1.000
+player,2010,sin_bins,Sin Bins,26,1,1,1,1,1,1.000
+player,2010,stint_one,Stint One,6819,1,29,72,80,100,1.389
+player,2010,tackle_breaks,Tackle Breaks,5034,1,1,2,6,17,8.500
+player,2010,tackles_made,Tackles Made,6764,1,4,17,33,61,3.588
+player,2010,tries,Tries,1234,1,1,1,2,4,4.000
+player,2010,try_assists,Try Assists,956,1,1,1,2,4,4.000
+player,2011,40_20,40/20,30,1,1,1,1,2,2.000
+player,2011,all_run_metres,All Run Metres,6794,1,27,76,136,328,4.316
+player,2011,conversions,Conversions,399,1,1,3,5,8,2.667
+player,2011,errors,Errors,3125,1,1,1,2,7,7.000
+player,2011,field_goals_1pt,1 Point Field Goals,45,1,1,1,1,2,2.000
+player,2011,ineffective_tackles,Ineffective Tackles,4031,1,1,1,3,8,8.000
+player,2011,kicking_metres,Kicking Metres,1752,1,12,68,367,780,11.471
+player,2011,kicks,Kicks,1759,1,1,2,11,21,10.500
+player,2011,line_break_assists,Line Break Assists,833,1,1,1,2,6,6.000
+player,2011,line_breaks,Line Breaks,1339,1,1,1,2,4,4.000
+player,2011,minutes_played,Minutes Played,6824,2,30,72,80,90,1.250
+player,2011,missed_tackles,Missed Tackles,5522,1,1,2,5,15,7.500
+player,2011,offloads,Offloads,2960,1,1,1,3,7,7.000
+player,2011,one_on_one_lost,One on One Lost,62,1,1,1,1,2,2.000
+player,2011,one_on_one_steal,One on One Steal,62,1,1,1,1,2,2.000
+player,2011,penalty_goals,Penalty Goals,1,1,1,1,1,1,1.000
+player,2011,send_offs,Send Offs,3,1,1,1,1,1,1.000
+player,2011,sin_bins,Sin Bins,21,1,1,1,1,1,1.000
+player,2011,stint_one,Stint One,6824,2,30,72,80,90,1.250
+player,2011,tackle_breaks,Tackle Breaks,4970,1,1,2,6,16,8.000
+player,2011,tackles_made,Tackles Made,6763,1,4,18,34,75,4.167
+player,2011,tries,Tries,1181,1,1,1,2,5,5.000
+player,2011,try_assists,Try Assists,894,1,1,1,2,5,5.000
+player,2012,40_20,40/20,42,1,1,1,1,1,1.000
+player,2012,all_run_metres,All Run Metres,6797,1,29,75,139,295,3.933
+player,2012,conversions,Conversions,403,1,1,3,5,8,2.667
+player,2012,errors,Errors,2978,1,1,1,2,6,6.000
+player,2012,field_goals_1pt,1 Point Field Goals,30,1,1,1,1,1,1.000
+player,2012,ineffective_tackles,Ineffective Tackles,3862,1,1,1,3,7,7.000
+player,2012,kicking_metres,Kicking Metres,1703,1,11,67,361,789,11.776
+player,2012,kicks,Kicks,1713,1,1,2,12,23,11.500
+player,2012,line_break_assists,Line Break Assists,923,1,1,1,2,5,5.000
+player,2012,line_breaks,Line Breaks,1450,1,1,1,2,5,5.000
+player,2012,minutes_played,Minutes Played,6822,1,29,72,80,90,1.250
+player,2012,missed_tackles,Missed Tackles,5372,1,1,2,5,12,6.000
+player,2012,offloads,Offloads,2847,1,1,1,3,7,7.000
+player,2012,one_on_one_lost,One on One Lost,43,1,1,1,1,2,2.000
+player,2012,one_on_one_steal,One on One Steal,43,1,1,1,1,2,2.000
+player,2012,send_offs,Send Offs,3,1,1,1,1,1,1.000
+player,2012,sin_bins,Sin Bins,11,1,1,1,1,1,1.000
+player,2012,stint_one,Stint One,6822,1,29,72,80,90,1.250
+player,2012,tackle_breaks,Tackle Breaks,4710,1,1,2,6,18,9.000
+player,2012,tackles_made,Tackles Made,6758,1,4,18,34,65,3.611
+player,2012,tries,Tries,1222,1,1,1,2,4,4.000
+player,2012,try_assists,Try Assists,911,1,1,1,2,5,5.000
+player,2013,40_20,40/20,48,1,1,1,1,2,2.000
+player,2013,all_run_metres,All Run Metres,6765,1,29,84,152,305,3.631
+player,2013,all_runs,All Runs,6770,1,4,9,15,30,3.333
+player,2013,bomb_kicks,Bomb Kicks,620,1,1,2,4,8,4.000
+player,2013,conversion_attempts,Conversion Attempts,423,1,1,3,6,12,4.000
+player,2013,conversions,Conversions,386,1,1,2,5,10,5.000
+player,2013,cross_field_kicks,Cross Field Kicks,546,1,1,1,3,7,7.000
+player,2013,dummy_half_run_metres,Dummy Half Run Metres,2179,1,6,15,44,136,9.067
+player,2013,dummy_half_runs,Dummy Half Runs,2225,1,1,2,5,13,6.500
+player,2013,dummy_passes,Dummy Passes,2286,1,1,1,4,18,18.000
+player,2013,field_goals_1pt,1 Point Field Goals,16,1,1,1,1,1,1.000
+player,2013,grubbers,Grubbers,1104,1,1,1,3,6,6.000
+player,2013,handling_errors,Handling Errors,2725,1,1,1,2,6,6.000
+player,2013,hit_ups,Hit Ups,4294,1,1,7,14,28,4.000
+player,2013,ineffective_tackles,Ineffective Tackles,3481,1,1,1,3,9,9.000
+player,2013,kicked_dead,Kicked Dead,426,1,1,1,2,5,5.000
+player,2013,kicking_metres,Kicking Metres,1723,1,10,55,354,858,15.600
+player,2013,kicks,Kicks,1771,1,1,2,12,25,12.500
+player,2013,kicks_defused,Kicks Defused,1685,1,1,2,7,16,8.000
+player,2013,line_break_assists,Line Break Assists,862,1,1,1,2,4,4.000
+player,2013,line_breaks,Line Breaks,1242,1,1,1,2,5,5.000
+player,2013,minutes_played,Minutes Played,6490,1,30,80,80,90,1.125
+player,2013,missed_tackles,Missed Tackles,4616,1,1,2,4,10,5.000
+player,2013,offloads,Offloads,2522,1,1,1,3,8,8.000
+player,2013,on_report,On Report,97,1,1,1,1,2,2.000
+player,2013,one_on_one_lost,One on One Lost,35,1,1,1,1,1,1.000
+player,2013,one_on_one_steal,One on One Steal,36,1,1,1,1,1,1.000
+player,2013,passes,Passes,5661,1,1,4,40,130,32.500
+player,2013,penalties,Penalties,2055,1,1,1,2,6,6.000
+player,2013,penalty_goals,Penalty Goals,111,1,1,1,2,4,4.000
+player,2013,post_contact_metres,Post Contact Metres,6685,1,8,28,54,110,3.929
+player,2013,receipts,Receipts,6815,1,7,16,47,137,8.563
+player,2013,send_offs,Send Offs,2,1,1,1,1,1,1.000
+player,2013,sin_bins,Sin Bins,15,1,1,1,1,1,1.000
+player,2013,stint_one,Stint One,6490,1,30,80,80,90,1.125
+player,2013,tackle_breaks,Tackle Breaks,4028,1,1,2,5,15,7.500
+player,2013,tackles_made,Tackles Made,6780,1,4,18,35,69,3.833
+player,2013,total_points,Total Points,6817,-4,16,34,57,107,3.147
+player,2013,tries,Tries,1202,1,1,1,2,4,4.000
+player,2013,try_assists,Try Assists,932,1,1,1,2,4,4.000
+player,2014,40_20,40/20,36,1,1,1,1,2,2.000
+player,2014,all_run_metres,All Run Metres,6775,1,30,84,150,335,3.988
+player,2014,all_runs,All Runs,6781,1,4,9,15,28,3.111
+player,2014,bomb_kicks,Bomb Kicks,656,1,1,2,4,8,4.000
+player,2014,conversion_attempts,Conversion Attempts,443,1,1,3,6,12,4.000
+player,2014,conversions,Conversions,401,1,1,2,5,9,4.500
+player,2014,cross_field_kicks,Cross Field Kicks,520,1,1,1,3,6,6.000
+player,2014,dummy_half_run_metres,Dummy Half Run Metres,2078,1,4,13,42,148,11.385
+player,2014,dummy_half_runs,Dummy Half Runs,2107,1,1,2,4,15,7.500
+player,2014,dummy_passes,Dummy Passes,2235,1,1,1,4,14,14.000
+player,2014,field_goals_1pt,1 Point Field Goals,21,1,1,1,1,2,2.000
+player,2014,grubbers,Grubbers,1099,1,1,1,3,8,8.000
+player,2014,handling_errors,Handling Errors,2629,1,1,1,2,5,5.000
+player,2014,hit_ups,Hit Ups,5147,1,1,6,13,26,4.333
+player,2014,ineffective_tackles,Ineffective Tackles,3660,1,1,1,3,8,8.000
+player,2014,kicked_dead,Kicked Dead,343,1,1,1,2,4,4.000
+player,2014,kicking_metres,Kicking Metres,1754,1,10,58,312,684,11.793
+player,2014,kicks,Kicks,1807,1,1,2,11,22,11.000
+player,2014,kicks_defused,Kicks Defused,1727,1,1,2,6,16,8.000
+player,2014,line_break_assists,Line Break Assists,833,1,1,1,2,5,5.000
+player,2014,line_breaks,Line Breaks,1319,1,1,1,2,4,4.000
+player,2014,minutes_played,Minutes Played,6817,1,29,72,80,85,1.181
+player,2014,missed_tackles,Missed Tackles,4857,1,1,2,4,12,6.000
+player,2014,offloads,Offloads,2680,1,1,1,3,7,7.000
+player,2014,on_report,On Report,154,1,1,1,1,2,2.000
+player,2014,one_on_one_lost,One on One Lost,40,1,1,1,1,1,1.000
+player,2014,one_on_one_steal,One on One Steal,40,1,1,1,1,2,2.000
+player,2014,passes,Passes,5791,1,1,5,40,142,28.400
+player,2014,penalties,Penalties,2104,1,1,1,2,5,5.000
+player,2014,penalty_goals,Penalty Goals,119,1,1,1,2,2,2.000
+player,2014,post_contact_metres,Post Contact Metres,6702,1,8,28,54,126,4.500
+player,2014,receipts,Receipts,6817,1,7,16,48,146,9.125
+player,2014,sin_bins,Sin Bins,24,1,1,1,1,1,1.000
+player,2014,stint_one,Stint One,6817,1,29,72,80,85,1.181
+player,2014,tackle_breaks,Tackle Breaks,4219,1,1,2,5,15,7.500
+player,2014,tackles_made,Tackles Made,6776,1,4,18,34,70,3.889
+player,2014,total_points,Total Points,6811,-5,11,28,50,93,3.321
+player,2014,tries,Tries,1227,1,1,1,2,4,4.000
+player,2014,try_assists,Try Assists,904,1,1,1,2,5,5.000
+player,2015,40_20,40/20,29,1,1,1,1,1,1.000
+player,2015,all_run_metres,All Run Metres,6792,1,32,89,155,339,3.809
+player,2015,all_runs,All Runs,6797,1,4,10,16,31,3.100
+player,2015,bomb_kicks,Bomb Kicks,653,1,1,2,4,8,4.000
+player,2015,conversion_attempts,Conversion Attempts,440,1,1,3,6,10,3.333
+player,2015,conversions,Conversions,385,1,1,2,5,8,4.000
+player,2015,cross_field_kicks,Cross Field Kicks,461,1,1,1,3,6,6.000
+player,2015,dummy_half_run_metres,Dummy Half Run Metres,2055,1,4,14,46,156,11.143
+player,2015,dummy_half_runs,Dummy Half Runs,2101,1,1,2,5,17,8.500
+player,2015,dummy_passes,Dummy Passes,3552,1,1,2,6,21,10.500
+player,2015,field_goals_1pt,1 Point Field Goals,30,1,1,1,1,2,2.000
+player,2015,grubbers,Grubbers,1118,1,1,1,3,6,6.000
+player,2015,handling_errors,Handling Errors,2393,1,1,1,2,7,7.000
+player,2015,hit_ups,Hit Ups,4175,1,1,8,14,26,3.250
+player,2015,ineffective_tackles,Ineffective Tackles,3755,1,1,1,3,8,8.000
+player,2015,kicked_dead,Kicked Dead,305,1,1,1,1,3,3.000
+player,2015,kicking_metres,Kicking Metres,1734,1,8,61,317,750,12.295
+player,2015,kicks,Kicks,1776,1,1,2,11,21,10.500
+player,2015,kicks_defused,Kicks Defused,1554,1,1,1,4,8,8.000
+player,2015,line_break_assists,Line Break Assists,993,1,1,1,2,4,4.000
+player,2015,line_breaks,Line Breaks,1314,1,1,1,2,4,4.000
+player,2015,minutes_played,Minutes Played,6787,1,28,74,80,90,1.216
+player,2015,missed_tackles,Missed Tackles,4890,1,1,2,4,9,4.500
+player,2015,offloads,Offloads,2626,1,1,1,3,7,7.000
+player,2015,on_report,On Report,139,1,1,1,1,2,2.000
+player,2015,one_on_one_lost,One on One Lost,50,1,1,1,1,1,1.000
+player,2015,one_on_one_steal,One on One Steal,59,1,1,1,1,1,1.000
+player,2015,passes,Passes,5745,1,1,5,41,143,28.600
+player,2015,penalties,Penalties,2093,1,1,1,2,4,4.000
+player,2015,penalty_goals,Penalty Goals,150,1,1,1,2,4,4.000
+player,2015,post_contact_metres,Post Contact Metres,6684,1,8,30,58,115,3.833
+player,2015,receipts,Receipts,6819,1,8,16,48,147,9.188
+player,2015,send_offs,Send Offs,1,1,1,1,1,1,1.000
+player,2015,sin_bins,Sin Bins,13,1,1,1,1,1,1.000
+player,2015,stint_one,Stint One,6787,1,28,74,80,90,1.216
+player,2015,tackle_breaks,Tackle Breaks,4275,1,1,2,5,14,7.000
+player,2015,tackles_made,Tackles Made,6782,1,4,19,37,77,4.053
+player,2015,total_points,Total Points,6815,-3,17,35,58,105,3.000
+player,2015,tries,Tries,1194,1,1,1,2,4,4.000
+player,2015,try_assists,Try Assists,941,1,1,1,2,4,4.000
+player,2016,40_20,40/20,24,1,1,1,1,1,1.000
+player,2016,all_run_metres,All Run Metres,6758,1,31,85,155,311,3.659
+player,2016,all_runs,All Runs,6767,1,4,10,16,29,2.900
+player,2016,bomb_kicks,Bomb Kicks,647,1,1,2,5,9,4.500
+player,2016,conversion_attempts,Conversion Attempts,447,1,1,3,6,11,3.667
+player,2016,conversions,Conversions,407,1,1,2,5,9,4.500
+player,2016,cross_field_kicks,Cross Field Kicks,387,1,1,1,2,5,5.000
+player,2016,dummy_half_run_metres,Dummy Half Run Metres,2057,1,5,14,40,172,12.286
+player,2016,dummy_half_runs,Dummy Half Runs,2100,1,1,2,4,13,6.500
+player,2016,dummy_passes,Dummy Passes,2962,1,1,2,5,16,8.000
+player,2016,errors,Errors,2686,1,1,1,2,6,6.000
+player,2016,field_goals_1pt,1 Point Field Goals,23,1,1,1,1,1,1.000
+player,2016,grubbers,Grubbers,1234,1,1,1,3,9,9.000
+player,2016,handling_errors,Handling Errors,2438,1,1,1,2,6,6.000
+player,2016,hit_ups,Hit Ups,4324,1,1,7,14,27,3.857
+player,2016,ineffective_tackles,Ineffective Tackles,3698,1,1,1,3,9,9.000
+player,2016,kicked_dead,Kicked Dead,271,1,1,1,2,3,3.000
+player,2016,kicking_metres,Kicking Metres,1729,1,9,55,293,619,11.255
+player,2016,kicks,Kicks,1802,1,1,2,10,21,10.500
+player,2016,kicks_defused,Kicks Defused,1567,1,1,1,4,9,9.000
+player,2016,line_break_assists,Line Break Assists,982,1,1,1,2,4,4.000
+player,2016,line_breaks,Line Breaks,1332,1,1,1,2,5,5.000
+player,2016,minutes_played,Minutes Played,6811,1,28,76,80,90,1.184
+player,2016,missed_tackles,Missed Tackles,5010,1,1,2,4,13,6.500
+player,2016,offloads,Offloads,2689,1,1,1,3,10,10.000
+player,2016,on_report,On Report,68,1,1,1,1,2,2.000
+player,2016,one_on_one_lost,One on One Lost,33,1,1,1,1,1,1.000
+player,2016,one_on_one_steal,One on One Steal,51,1,1,1,1,2,2.000
+player,2016,passes,Passes,5838,1,1,5,39,148,29.600
+player,2016,penalties,Penalties,2199,1,1,1,2,4,4.000
+player,2016,penalty_goals,Penalty Goals,181,1,1,1,2,4,4.000
+player,2016,play_the_ball,Play The Ball,2566,1,2,8,13,25,3.125
+player,2016,post_contact_metres,Post Contact Metres,6613,1,6,24,50,121,5.042
+player,2016,receipts,Receipts,6805,1,7,16,47,146,9.125
+player,2016,sin_bins,Sin Bins,17,1,1,1,1,1,1.000
+player,2016,stint_one,Stint One,6810,0.75,21.316666666666666,74.54166666666666,80,90,1.207
+player,2016,stint_two,Stint Two,1767,0.36666666666666664,5.333333333333333,15.8,29.65,64.46666666666667,4.080
+player,2016,tackle_breaks,Tackle Breaks,4439,1,1,2,5,17,8.500
+player,2016,tackles_made,Tackles Made,6758,1,4,18,36,73,4.056
+player,2016,total_points,Total Points,6806,-6,14,33,57,118,3.576
+player,2016,tries,Tries,1223,1,1,1,2,4,4.000
+player,2016,try_assists,Try Assists,919,1,1,1,2,5,5.000
+player,2017,40_20,40/20,31,1,1,1,1,2,2.000
+player,2017,all_run_metres,All Run Metres,6732,1,31,88,159,328,3.727
+player,2017,all_runs,All Runs,6748,1,4,10,17,29,2.900
+player,2017,bomb_kicks,Bomb Kicks,613,1,1,2,4,9,4.500
+player,2017,conversion_attempts,Conversion Attempts,434,1,1,3,6,9,3.000
+player,2017,conversions,Conversions,407,1,1,2,5,9,4.500
+player,2017,cross_field_kicks,Cross Field Kicks,366,1,1,1,2,5,5.000
+player,2017,dummy_half_run_metres,Dummy Half Run Metres,2077,1,4,14,43,133,9.500
+player,2017,dummy_half_runs,Dummy Half Runs,2135,1,1,2,4,15,7.500
+player,2017,dummy_passes,Dummy Passes,3531,1,1,2,6,18,9.000
+player,2017,errors,Errors,2863,1,1,1,2,5,5.000
+player,2017,field_goals_1pt,1 Point Field Goals,20,1,1,1,1,1,1.000
+player,2017,grubbers,Grubbers,1183,1,1,1,3,9,9.000
+player,2017,handling_errors,Handling Errors,2411,1,1,1,2,5,5.000
+player,2017,hit_ups,Hit Ups,4236,1,1,7,14,25,3.571
+player,2017,ineffective_tackles,Ineffective Tackles,3639,1,1,1,3,8,8.000
+player,2017,kicked_dead,Kicked Dead,273,1,1,1,1,3,3.000
+player,2017,kicking_metres,Kicking Metres,1694,1,9,58,298,627,10.810
+player,2017,kicks,Kicks,1777,1,1,2,11,23,11.500
+player,2017,kicks_defused,Kicks Defused,1536,1,1,1,3,10,10.000
+player,2017,line_break_assists,Line Break Assists,903,1,1,1,2,4,4.000
+player,2017,line_breaks,Line Breaks,1362,1,1,1,2,4,4.000
+player,2017,minutes_played,Minutes Played,6764,2,27,77,80,90,1.169
+player,2017,missed_tackles,Missed Tackles,5242,1,1,2,5,12,6.000
+player,2017,offloads,Offloads,2552,1,1,1,3,7,7.000
+player,2017,on_report,On Report,29,1,1,1,1,1,1.000
+player,2017,one_on_one_lost,One on One Lost,35,1,1,1,1,1,1.000
+player,2017,one_on_one_steal,One on One Steal,45,1,1,1,1,1,1.000
+player,2017,passes,Passes,5631,1,1,5,38,147,29.400
+player,2017,penalties,Penalties,2061,1,1,1,2,4,4.000
+player,2017,penalty_goals,Penalty Goals,166,1,1,1,2,4,4.000
+player,2017,play_the_ball,Play The Ball,2074,1,2,8,14,24,3.000
+player,2017,post_contact_metres,Post Contact Metres,6593,1,7,28,54,127,4.536
+player,2017,receipts,Receipts,6783,1,7,15,46,151,10.067
+player,2017,sin_bins,Sin Bins,43,1,1,1,1,1,1.000
+player,2017,stint_one,Stint One,6764,1.9833333333333334,21.116666666666667,76.59166666666667,80,90,1.175
+player,2017,stint_two,Stint Two,1693,0.1,5.916666666666667,16.966666666666665,30.366666666666667,63.38333333333333,3.736
+player,2017,tackle_breaks,Tackle Breaks,4532,1,1,2,5,19,9.500
+player,2017,tackles_made,Tackles Made,6734,1,4,17,35,72,4.235
+player,2017,total_points,Total Points,6793,-4,14,33,56,127,3.848
+player,2017,tries,Tries,1200,1,1,1,2,5,5.000
+player,2017,try_assists,Try Assists,853,1,1,1,2,5,5.000
+player,2018,40_20,40/20,20,1,1,1,1,1,1.000
+player,2018,all_run_metres,All Run Metres,6737,1,30,86,152,338,3.930
+player,2018,all_runs,All Runs,6742,1,4,10,16,32,3.200
+player,2018,bomb_kicks,Bomb Kicks,687,1,1,2,5,10,5.000
+player,2018,conversion_attempts,Conversion Attempts,426,1,1,3,6,10,3.333
+player,2018,conversions,Conversions,387,1,1,2,4,8,4.000
+player,2018,cross_field_kicks,Cross Field Kicks,308,1,1,1,2,4,4.000
+player,2018,dummy_half_run_metres,Dummy Half Run Metres,2040,1,5,14,43,164,11.714
+player,2018,dummy_half_runs,Dummy Half Runs,2077,1,1,2,4,16,8.000
+player,2018,dummy_passes,Dummy Passes,3494,1,1,2,6,24,12.000
+player,2018,errors,Errors,2825,1,1,1,2,6,6.000
+player,2018,field_goals_1pt,1 Point Field Goals,31,1,1,1,1,3,3.000
+player,2018,grubbers,Grubbers,1124,1,1,1,3,7,7.000
+player,2018,handling_errors,Handling Errors,2518,1,1,1,2,6,6.000
+player,2018,hit_ups,Hit Ups,4439,1,1,7,13,26,3.714
+player,2018,ineffective_tackles,Ineffective Tackles,3655,1,1,1,3,7,7.000
+player,2018,kicked_dead,Kicked Dead,228,1,1,1,1,3,3.000
+player,2018,kicking_metres,Kicking Metres,1641,1,8,54,301,685,12.685
+player,2018,kicks,Kicks,1701,1,1,2,11,23,11.500
+player,2018,kicks_defused,Kicks Defused,1485,1,1,1,3,9,9.000
+player,2018,line_break_assists,Line Break Assists,851,1,1,1,2,5,5.000
+player,2018,line_breaks,Line Breaks,1274,1,1,1,2,4,4.000
+player,2018,minutes_played,Minutes Played,6791,1,27,77,80,89,1.156
+player,2018,missed_tackles,Missed Tackles,5262,1,1,2,5,14,7.000
+player,2018,offloads,Offloads,2620,1,1,1,3,10,10.000
+player,2018,on_report,On Report,50,1,1,1,1,1,1.000
+player,2018,one_on_one_lost,One on One Lost,56,1,1,1,1,1,1.000
+player,2018,one_on_one_steal,One on One Steal,66,1,1,1,1,2,2.000
+player,2018,passes,Passes,5595,1,1,5,41,142,28.400
+player,2018,penalties,Penalties,2530,1,1,1,2,5,5.000
+player,2018,penalty_goals,Penalty Goals,253,1,1,1,3,5,5.000
+player,2018,play_the_ball,Play The Ball,895,1,2,8,14,22,2.750
+player,2018,post_contact_metres,Post Contact Metres,6604,1,7,27,54,117,4.333
+player,2018,receipts,Receipts,6780,1,7,15,48,140,9.333
+player,2018,send_offs,Send Offs,1,1,1,1,1,1,1.000
+player,2018,sin_bins,Sin Bins,110,1,1,1,1,2,2.000
+player,2018,stint_one,Stint One,6790,1,21,75.91666666666666,80,89,1.172
+player,2018,stint_two,Stint Two,1665,0.05,5.883333333333333,16.7,28.916666666666668,60.8,3.641
+player,2018,tackle_breaks,Tackle Breaks,4639,1,1,2,5,17,8.500
+player,2018,tackles_made,Tackles Made,6718,1,4,18,36,73,4.056
+player,2018,total_points,Total Points,6784,-7,14,33,56,114,3.455
+player,2018,tries,Tries,1152,1,1,1,2,4,4.000
+player,2018,try_assists,Try Assists,862,1,1,1,2,6,6.000
+player,2019,40_20,40/20,37,1,1,1,1,1,1.000
+player,2019,all_run_metres,All Run Metres,6767,1,33,89,158,368,4.135
+player,2019,all_runs,All Runs,6775,1,4,10,17,34,3.400
+player,2019,bomb_kicks,Bomb Kicks,726,1,1,2,5,10,5.000
+player,2019,conversion_attempts,Conversion Attempts,432,1,1,3,6,10,3.333
+player,2019,conversions,Conversions,395,1,1,2,4,9,4.500
+player,2019,cross_field_kicks,Cross Field Kicks,299,1,1,1,2,5,5.000
+player,2019,dummy_half_run_metres,Dummy Half Run Metres,1832,1,4,14,44,149,10.643
+player,2019,dummy_half_runs,Dummy Half Runs,1878,1,1,2,5,15,7.500
+player,2019,dummy_passes,Dummy Passes,2241,1,1,1,4,21,21.000
+player,2019,errors,Errors,2964,1,1,1,2,6,6.000
+player,2019,field_goals_1pt,1 Point Field Goals,33,1,1,1,1,3,3.000
+player,2019,grubbers,Grubbers,1258,1,1,1,3,7,7.000
+player,2019,handling_errors,Handling Errors,2475,1,1,1,2,6,6.000
+player,2019,hit_ups,Hit Ups,4394,1,1,7,14,29,4.143
+player,2019,ineffective_tackles,Ineffective Tackles,3728,1,1,1,3,8,8.000
+player,2019,kicked_dead,Kicked Dead,234,1,1,1,1,3,3.000
+player,2019,kicking_metres,Kicking Metres,1686,1,10,60,335,647,10.783
+player,2019,kicks,Kicks,1766,1,1,2,11,23,11.500
+player,2019,kicks_defused,Kicks Defused,1540,1,1,1,4,10,10.000
+player,2019,line_break_assists,Line Break Assists,820,1,1,1,2,3,3.000
+player,2019,line_breaks,Line Breaks,1258,1,1,1,2,4,4.000
+player,2019,minutes_played,Minutes Played,6815,1,27,76,80,90,1.184
+player,2019,missed_tackles,Missed Tackles,5193,1,1,2,4,13,6.500
+player,2019,offloads,Offloads,2604,1,1,1,3,9,9.000
+player,2019,on_report,On Report,92,1,1,1,1,1,1.000
+player,2019,one_on_one_lost,One on One Lost,106,1,1,1,1,2,2.000
+player,2019,one_on_one_steal,One on One Steal,113,1,1,1,1,3,3.000
+player,2019,passes,Passes,5554,1,1,4,42,156,39.000
+player,2019,penalties,Penalties,2095,1,1,1,2,5,5.000
+player,2019,penalty_goals,Penalty Goals,187,1,1,1,3,4,4.000
+player,2019,play_the_ball,Play The Ball,165,1,3,8,15,23,2.875
+player,2019,post_contact_metres,Post Contact Metres,6616,1,7,25,51,120,4.800
+player,2019,receipts,Receipts,6807,1,7,16,50,157,9.813
+player,2019,send_offs,Send Offs,1,1,1,1,1,1,1.000
+player,2019,sin_bins,Sin Bins,62,1,1,1,1,1,1.000
+player,2019,stint_one,Stint One,6813,0.45,21.55,74.13333333333334,80,90,1.214
+player,2019,stint_two,Stint Two,1714,0.016666666666666666,5.583333333333333,16.941666666666666,29.3,67.78333333333333,4.001
+player,2019,tackle_breaks,Tackle Breaks,4570,1,1,2,5,17,8.500
+player,2019,tackles_made,Tackles Made,6745,1,4,19,38,72,3.789
+player,2019,total_points,Total Points,6801,-8,15,34,58,120,3.529
+player,2019,tries,Tries,1159,1,1,1,2,4,4.000
+player,2019,try_assists,Try Assists,816,1,1,1,2,4,4.000
+player,2020,40_20,40/20,26,1,1,1,1,1,1.000
+player,2020,all_run_metres,All Run Metres,5636,1,34,93,170,369,3.968
+player,2020,all_runs,All Runs,5641,1,4,11,18,34,3.091
+player,2020,bomb_kicks,Bomb Kicks,597,1,1,2,5,10,5.000
+player,2020,conversion_attempts,Conversion Attempts,363,1,1,3,6,10,3.333
+player,2020,conversions,Conversions,328,1,1,2,5,9,4.500
+player,2020,cross_field_kicks,Cross Field Kicks,352,1,1,1,2,6,6.000
+player,2020,dummy_half_run_metres,Dummy Half Run Metres,1475,1,5,14,45,138,9.857
+player,2020,dummy_half_runs,Dummy Half Runs,1508,1,1,2,5,15,7.500
+player,2020,dummy_passes,Dummy Passes,2347,1,1,2,5,15,7.500
+player,2020,errors,Errors,2546,1,1,1,2,6,6.000
+player,2020,field_goals_1pt,1 Point Field Goals,19,1,1,1,1,1,1.000
+player,2020,grubbers,Grubbers,981,1,1,1,3,8,8.000
+player,2020,handling_errors,Handling Errors,2255,1,1,1,2,6,6.000
+player,2020,hit_ups,Hit Ups,3628,1,1,7,15,27,3.857
+player,2020,ineffective_tackles,Ineffective Tackles,3094,1,1,1,3,8,8.000
+player,2020,kicked_dead,Kicked Dead,168,1,1,1,1,3,3.000
+player,2020,kicking_metres,Kicking Metres,1426,1,9,61,356,892,14.623
+player,2020,kicks,Kicks,1484,1,1,2,12,25,12.500
+player,2020,kicks_defused,Kicks Defused,1284,1,1,1,4,10,10.000
+player,2020,line_break_assists,Line Break Assists,756,1,1,1,2,5,5.000
+player,2020,line_breaks,Line Breaks,1110,1,1,1,2,5,5.000
+player,2020,minutes_played,Minutes Played,5696,1,26,76,80,90,1.184
+player,2020,missed_tackles,Missed Tackles,4203,1,1,2,4,12,6.000
+player,2020,offloads,Offloads,2100,1,1,1,3,7,7.000
+player,2020,on_report,On Report,94,1,1,1,1,1,1.000
+player,2020,one_on_one_lost,One on One Lost,100,1,1,1,1,1,1.000
+player,2020,one_on_one_steal,One on One Steal,98,1,1,1,1,2,2.000
+player,2020,passes,Passes,4655,1,1,5,44,157,31.400
+player,2020,penalties,Penalties,1423,1,1,1,2,5,5.000
+player,2020,penalty_goals,Penalty Goals,128,1,1,1,2,4,4.000
+player,2020,post_contact_metres,Post Contact Metres,5537,1,8,31,64,141,4.548
+player,2020,receipts,Receipts,5685,1,7,16,52,160,10.000
+player,2020,send_offs,Send Offs,3,1,1,1,1,1,1.000
+player,2020,sin_bins,Sin Bins,56,1,1,1,1,1,1.000
+player,2020,stint_one,Stint One,5696,0.7833333333333333,21.4,74.95,80,90,1.201
+player,2020,stint_two,Stint Two,1410,0.016666666666666666,5.683333333333334,16.758333333333333,28.883333333333333,61.9,3.694
+player,2020,tackle_breaks,Tackle Breaks,3676,1,1,2,5,17,8.500
+player,2020,tackles_made,Tackles Made,5631,1,4,19,39,75,3.947
+player,2020,total_points,Total Points,5718,-8,15,36,62,112,3.111
+player,2020,tries,Tries,1039,1,1,1,2,5,5.000
+player,2020,try_assists,Try Assists,766,1,1,1,2,5,5.000
+player,2021,20_40,20/40,1,1,1,1,1,1,1.000
+player,2021,40_20,40/20,29,1,1,1,1,1,1.000
+player,2021,all_run_metres,All Run Metres,6588,1,32,93,166,336,3.613
+player,2021,all_runs,All Runs,6594,1,4,11,18,35,3.182
+player,2021,bomb_kicks,Bomb Kicks,682,1,1,2,5,12,6.000
+player,2021,conversion_attempts,Conversion Attempts,421,1,1,3,7,12,4.000
+player,2021,conversions,Conversions,390,1,1,3,5,11,3.667
+player,2021,cross_field_kicks,Cross Field Kicks,362,1,1,1,2,5,5.000
+player,2021,dummy_half_run_metres,Dummy Half Run Metres,1689,1,4,13,44,134,10.308
+player,2021,dummy_half_runs,Dummy Half Runs,1736,1,1,2,5,18,9.000
+player,2021,dummy_passes,Dummy Passes,2427,1,1,2,5,17,8.500
+player,2021,errors,Errors,2949,1,1,1,2,6,6.000
+player,2021,field_goals_1pt,1 Point Field Goals,23,1,1,1,1,1,1.000
+player,2021,field_goals_2pt,2 Point Field Goals,5,1,1,1,1,1,1.000
+player,2021,grubbers,Grubbers,1098,1,1,1,2,8,8.000
+player,2021,handling_errors,Handling Errors,2528,1,1,1,2,6,6.000
+player,2021,hit_ups,Hit Ups,4185,1,1,7,14,25,3.571
+player,2021,ineffective_tackles,Ineffective Tackles,3645,1,1,1,3,8,8.000
+player,2021,kicked_dead,Kicked Dead,219,1,1,1,1,2,2.000
+player,2021,kicking_metres,Kicking Metres,1649,1,9,54,347,844,15.630
+player,2021,kicks,Kicks,1709,1,1,2,12,24,12.000
+player,2021,kicks_defused,Kicks Defused,1381,1,1,1,3,10,10.000
+player,2021,line_break_assists,Line Break Assists,1028,1,1,1,2,5,5.000
+player,2021,line_breaks,Line Breaks,1473,1,1,1,2,6,6.000
+player,2021,minutes_played,Minutes Played,6614,1,27,72,80,89,1.236
+player,2021,missed_tackles,Missed Tackles,5001,1,1,2,5,14,7.000
+player,2021,offloads,Offloads,2506,1,1,1,3,8,8.000
+player,2021,on_report,On Report,381,1,1,1,1,4,4.000
+player,2021,one_on_one_lost,One on One Lost,113,1,1,1,1,2,2.000
+player,2021,one_on_one_steal,One on One Steal,117,1,1,1,1,2,2.000
+player,2021,passes,Passes,5490,1,1,5,44,157,31.400
+player,2021,penalties,Penalties,1443,1,1,1,2,4,4.000
+player,2021,penalty_goals,Penalty Goals,125,1,1,1,2,3,3.000
+player,2021,post_contact_metres,Post Contact Metres,6484,1,8,30,58,132,4.400
+player,2021,receipts,Receipts,6634,1,7,16,52,158,9.875
+player,2021,send_offs,Send Offs,7,1,1,1,1,1,1.000
+player,2021,sin_bins,Sin Bins,108,1,1,1,1,2,2.000
+player,2021,stint_one,Stint One,6670,0.03333333333333333,20.433333333333334,68.975,80,89,1.290
+player,2021,stint_two,Stint Two,1829,0.05,5.8,16.716666666666665,30.85,67.35,4.029
+player,2021,tackle_breaks,Tackle Breaks,4352,1,1,2,5,19,9.500
+player,2021,tackles_made,Tackles Made,6581,1,4,19,37,70,3.684
+player,2021,total_points,Total Points,6816,-7,15,37,62,150,4.054
+player,2021,tries,Tries,1300,1,1,1,2,6,6.000
+player,2021,try_assists,Try Assists,985,1,1,1,2,5,5.000
+player,2022,20_40,20/40,2,1,1,1,1,1,1.000
+player,2022,40_20,40/20,33,1,1,1,1,2,2.000
+player,2022,all_run_metres,All Run Metres,6760,1,32,92,164,344,3.739
+player,2022,all_runs,All Runs,6767,1,4,10,17,33,3.300
+player,2022,bomb_kicks,Bomb Kicks,701,1,1,2,5,10,5.000
+player,2022,conversion_attempts,Conversion Attempts,431,1,1,3,6,12,4.000
+player,2022,conversions,Conversions,387,1,1,3,5,12,4.000
+player,2022,cross_field_kicks,Cross Field Kicks,355,1,1,1,2,5,5.000
+player,2022,dummy_half_run_metres,Dummy Half Run Metres,1739,1,4,13,43,134,10.308
+player,2022,dummy_half_runs,Dummy Half Runs,1785,1,1,1,4,15,15.000
+player,2022,dummy_passes,Dummy Passes,2197,1,1,1,4,20,20.000
+player,2022,errors,Errors,3022,1,1,1,2,8,8.000
+player,2022,field_goals_1pt,1 Point Field Goals,24,1,1,1,1,1,1.000
+player,2022,field_goals_2pt,2 Point Field Goals,2,1,1,1,1,1,1.000
+player,2022,grubbers,Grubbers,1125,1,1,1,3,6,6.000
+player,2022,handling_errors,Handling Errors,2629,1,1,1,2,6,6.000
+player,2022,hit_ups,Hit Ups,4433,1,1,7,14,23,3.286
+player,2022,ineffective_tackles,Ineffective Tackles,3841,1,1,1,3,9,9.000
+player,2022,kicked_dead,Kicked Dead,190,1,1,1,1,2,2.000
+player,2022,kicking_metres,Kicking Metres,1636,1,9,53,389,785,14.811
+player,2022,kicks,Kicks,1699,1,1,2,13,25,12.500
+player,2022,kicks_defused,Kicks Defused,1530,1,1,1,3,10,10.000
+player,2022,line_break_assists,Line Break Assists,1118,1,1,1,2,4,4.000
+player,2022,line_breaks,Line Breaks,1500,1,1,1,2,4,4.000
+player,2022,minutes_played,Minutes Played,6826,1,26,73,80,93,1.274
+player,2022,missed_tackles,Missed Tackles,5268,1,1,2,5,12,6.000
+player,2022,offloads,Offloads,2633,1,1,1,3,8,8.000
+player,2022,on_report,On Report,233,1,1,1,1,4,4.000
+player,2022,one_on_one_lost,One on One Lost,92,1,1,1,1,1,1.000
+player,2022,one_on_one_steal,One on One Steal,88,1,1,1,1,2,2.000
+player,2022,passes,Passes,5730,1,1,5,42,146,29.200
+player,2022,penalties,Penalties,1938,1,1,1,2,4,4.000
+player,2022,penalty_goals,Penalty Goals,128,1,1,1,2,3,3.000
+player,2022,post_contact_metres,Post Contact Metres,6676,1,8,31,61,138,4.452
+player,2022,receipts,Receipts,6806,1,7,16,52,153,9.563
+player,2022,send_offs,Send Offs,12,1,1,1,1,1,1.000
+player,2022,sin_bins,Sin Bins,96,1,1,1,1,2,2.000
+player,2022,stint_one,Stint One,6826,1,20.183333333333334,71.21666666666667,80,93,1.306
+player,2022,stint_two,Stint Two,1723,0.016666666666666666,5.583333333333333,16.65,30,64.48333333333333,3.873
+player,2022,tackle_breaks,Tackle Breaks,4596,1,1,2,6,17,8.500
+player,2022,tackles_made,Tackles Made,6751,1,4,19,36,68,3.579
+player,2022,total_points,Total Points,6811,-8,14,35,59,132,3.771
+player,2022,tries,Tries,1282,1,1,1,2,5,5.000
+player,2022,try_assists,Try Assists,1013,1,1,1,2,4,4.000
+player,2023,40_20,40/20,37,1,1,1,1,2,2.000
+player,2023,all_run_metres,All Run Metres,7193,1,32,96,172,333,3.469
+player,2023,all_runs,All Runs,7204,1,4,11,18,33,3.000
+player,2023,bomb_kicks,Bomb Kicks,772,1,1,2,6,13,6.500
+player,2023,conversion_attempts,Conversion Attempts,462,1,1,3,6,13,4.333
+player,2023,conversions,Conversions,427,1,1,3,5,11,3.667
+player,2023,cross_field_kicks,Cross Field Kicks,400,1,1,1,2,6,6.000
+player,2023,dummy_half_run_metres,Dummy Half Run Metres,1664,1,4,12,40,161,13.417
+player,2023,dummy_half_runs,Dummy Half Runs,1713,1,1,1,4,17,17.000
+player,2023,dummy_passes,Dummy Passes,2617,1,1,2,5,20,10.000
+player,2023,errors,Errors,3069,1,1,1,3,6,6.000
+player,2023,field_goals_1pt,1 Point Field Goals,37,1,1,1,1,2,2.000
+player,2023,field_goals_2pt,2 Point Field Goals,4,1,1,1,1,1,1.000
+player,2023,grubbers,Grubbers,1169,1,1,1,2,8,8.000
+player,2023,handling_errors,Handling Errors,2695,1,1,1,2,6,6.000
+player,2023,hit_ups,Hit Ups,4650,1,1,7,14,24,3.429
+player,2023,ineffective_tackles,Ineffective Tackles,4046,1,1,1,3,8,8.000
+player,2023,kicked_dead,Kicked Dead,200,1,1,1,1,2,2.000
+player,2023,kicking_metres,Kicking Metres,1713,1,8,53,407,1006,18.981
+player,2023,kicks,Kicks,1767,1,1,2,13,26,13.000
+player,2023,kicks_defused,Kicks Defused,1588,1,1,1,3,10,10.000
+player,2023,line_break_assists,Line Break Assists,1231,1,1,1,2,6,6.000
+player,2023,line_breaks,Line Breaks,1698,1,1,1,2,5,5.000
+player,2023,minutes_played,Minutes Played,7259,1,27,74,80,90,1.216
+player,2023,missed_tackles,Missed Tackles,5704,1,1,2,5,12,6.000
+player,2023,offloads,Offloads,2664,1,1,1,3,8,8.000
+player,2023,on_report,On Report,271,1,1,1,1,3,3.000
+player,2023,one_on_one_lost,One on One Lost,80,1,1,1,1,1,1.000
+player,2023,one_on_one_steal,One on One Steal,82,1,1,1,1,2,2.000
+player,2023,passes,Passes,6050,1,1,5,43,153,30.600
+player,2023,penalties,Penalties,1975,1,1,1,2,4,4.000
+player,2023,penalty_goals,Penalty Goals,158,1,1,1,2,3,3.000
+player,2023,post_contact_metres,Post Contact Metres,7049,1,7,28,56,115,4.107
+player,2023,receipts,Receipts,7245,1,7,17,53,158,9.294
+player,2023,send_offs,Send Offs,4,1,1,1,1,1,1.000
+player,2023,sin_bins,Sin Bins,121,1,1,1,1,1,1.000
+player,2023,stint_one,Stint One,7259,1,21.466666666666665,72,80,90,1.250
+player,2023,stint_two,Stint Two,1798,0.016666666666666666,5.45,16.508333333333333,28.466666666666665,66.46666666666667,4.026
+player,2023,tackle_breaks,Tackle Breaks,5092,1,1,2,6,16,8.000
+player,2023,tackles_made,Tackles Made,7201,1,4,19,37,81,4.263
+player,2023,total_points,Total Points,7246,-12,15,36,60,112,3.111
+player,2023,tries,Tries,1385,1,1,1,2,4,4.000
+player,2023,try_assists,Try Assists,1076,1,1,1,2,5,5.000
+player,2024,40_20,40/20,33,1,1,1,1,2,2.000
+player,2024,all_run_metres,All Run Metres,7188,1,34,95,173,357,3.758
+player,2024,all_runs,All Runs,7194,1,4,11,18,35,3.182
+player,2024,bomb_kicks,Bomb Kicks,782,1,1,2,6,11,5.500
+player,2024,conversion_attempts,Conversion Attempts,475,1,1,3,7,11,3.667
+player,2024,conversions,Conversions,448,1,1,3,5,11,3.667
+player,2024,cross_field_kicks,Cross Field Kicks,402,1,1,1,2,6,6.000
+player,2024,dummy_half_run_metres,Dummy Half Run Metres,1628,1,3,11,41,156,14.182
+player,2024,dummy_half_runs,Dummy Half Runs,1671,1,1,1,4,13,13.000
+player,2024,dummy_passes,Dummy Passes,2672,1,1,2,5,19,9.500
+player,2024,errors,Errors,3150,1,1,1,2,6,6.000
+player,2024,field_goals_1pt,1 Point Field Goals,21,1,1,1,1,2,2.000
+player,2024,field_goals_2pt,2 Point Field Goals,5,1,1,1,1,1,1.000
+player,2024,grubbers,Grubbers,1061,1,1,1,2,10,10.000
+player,2024,handling_errors,Handling Errors,2906,1,1,1,2,5,5.000
+player,2024,hit_ups,Hit Ups,4610,1,1,7,13,23,3.286
+player,2024,ineffective_tackles,Ineffective Tackles,3844,1,1,1,3,8,8.000
+player,2024,kicked_dead,Kicked Dead,177,1,1,1,1,2,2.000
+player,2024,kicking_metres,Kicking Metres,1711,1,8,57,411,799,14.018
+player,2024,kicks,Kicks,1771,1,1,2,13,28,14.000
+player,2024,kicks_defused,Kicks Defused,1570,1,1,1,4,10,10.000
+player,2024,line_break_assists,Line Break Assists,1200,1,1,1,2,4,4.000
+player,2024,line_breaks,Line Breaks,1686,1,1,1,2,6,6.000
+player,2024,minutes_played,Minutes Played,7257,1,26,75,80,90,1.200
+player,2024,missed_tackles,Missed Tackles,5752,1,1,2,5,12,6.000
+player,2024,offloads,Offloads,2551,1,1,1,3,7,7.000
+player,2024,on_report,On Report,392,1,1,1,1,2,2.000
+player,2024,one_on_one_lost,One on One Lost,55,1,1,1,1,1,1.000
+player,2024,one_on_one_steal,One on One Steal,55,1,1,1,1,2,2.000
+player,2024,passes,Passes,6037,1,1,5,44,171,34.200
+player,2024,penalties,Penalties,1940,1,1,1,2,4,4.000
+player,2024,penalty_goals,Penalty Goals,137,1,1,1,2,3,3.000
+player,2024,post_contact_metres,Post Contact Metres,7092,1,8,31,60,137,4.419
+player,2024,receipts,Receipts,7246,1,7,17,54,177,10.412
+player,2024,send_offs,Send Offs,3,1,1,1,1,1,1.000
+player,2024,sin_bins,Sin Bins,120,1,1,1,1,2,2.000
+player,2024,stint_one,Stint One,7257,0.31666666666666665,21,73.01666666666667,80,90,1.233
+player,2024,stint_two,Stint Two,1782,0.06666666666666667,5.133333333333334,16.425,29.316666666666666,65.08333333333333,3.962
+player,2024,tackle_breaks,Tackle Breaks,5147,1,1,2,6,21,10.500
+player,2024,tackles_made,Tackles Made,7194,1,4,19,37,71,3.737
+player,2024,total_points,Total Points,7241,-12,16,36,59,124,3.444
+player,2024,tries,Tries,1457,1,1,1,2,4,4.000
+player,2024,try_assists,Try Assists,1131,1,1,1,2,4,4.000
+player,2025,20_40,20/40,1,1,1,1,1,1,1.000
+player,2025,40_20,40/20,33,1,1,1,1,2,2.000
+player,2025,all_run_metres,All Run Metres,7190,1,31,93,174,350,3.763
+player,2025,all_runs,All Runs,7196,1,4,11,18,34,3.091
+player,2025,bomb_kicks,Bomb Kicks,796,1,1,2,6,14,7.000
+player,2025,conversion_attempts,Conversion Attempts,478,1,1,3,6,11,3.667
+player,2025,conversions,Conversions,446,1,1,3,5,10,3.333
+player,2025,cross_field_kicks,Cross Field Kicks,425,1,1,1,3,5,5.000
+player,2025,dummy_half_run_metres,Dummy Half Run Metres,1631,1,4,12,38,116,9.667
+player,2025,dummy_half_runs,Dummy Half Runs,1669,1,1,1,4,14,14.000
+player,2025,dummy_passes,Dummy Passes,2997,1,1,2,5,20,10.000
+player,2025,errors,Errors,3181,1,1,1,3,7,7.000
+player,2025,field_goals_1pt,1 Point Field Goals,15,1,1,1,1,1,1.000
+player,2025,field_goals_2pt,2 Point Field Goals,3,1,1,1,1,1,1.000
+player,2025,grubbers,Grubbers,1081,1,1,1,2,6,6.000
+player,2025,handling_errors,Handling Errors,2819,1,1,1,2,6,6.000
+player,2025,hit_ups,Hit Ups,4555,1,1,7,14,29,4.143
+player,2025,ineffective_tackles,Ineffective Tackles,3952,1,1,1,3,8,8.000
+player,2025,kicked_dead,Kicked Dead,172,1,1,1,1,2,2.000
+player,2025,kicking_metres,Kicking Metres,1749,1,8,56,428,1027,18.339
+player,2025,kicks,Kicks,1809,1,1,2,13,27,13.500
+player,2025,kicks_defused,Kicks Defused,1521,1,1,1,3,9,9.000
+player,2025,line_break_assists,Line Break Assists,1222,1,1,1,2,5,5.000
+player,2025,line_breaks,Line Breaks,1632,1,1,1,2,5,5.000
+player,2025,minutes_played,Minutes Played,7259,1,27,74,80,94,1.270
+player,2025,missed_tackles,Missed Tackles,5640,1,1,2,5,15,7.500
+player,2025,offloads,Offloads,2633,1,1,1,3,8,8.000
+player,2025,on_report,On Report,357,1,1,1,1,2,2.000
+player,2025,one_on_one_lost,One on One Lost,51,1,1,1,1,1,1.000
+player,2025,one_on_one_steal,One on One Steal,52,1,1,1,1,2,2.000
+player,2025,passes,Passes,5996,1,1,5,48,177,35.400
+player,2025,penalties,Penalties,1944,1,1,1,2,4,4.000
+player,2025,penalty_goals,Penalty Goals,156,1,1,1,2,4,4.000
+player,2025,post_contact_metres,Post Contact Metres,7079,1,8,30,59,155,5.167
+player,2025,receipts,Receipts,7248,1,7,17,56,181,10.647
+player,2025,sin_bins,Sin Bins,110,1,1,1,1,1,1.000
+player,2025,stint_one,Stint One,7259,0.016666666666666666,21.45,72.9,80,94,1.289
+player,2025,stint_two,Stint Two,1765,0.36666666666666664,5.866666666666667,16.766666666666666,29.783333333333335,64,3.817
+player,2025,tackle_breaks,Tackle Breaks,4968,1,1,2,6,15,7.500
+player,2025,tackles_made,Tackles Made,7199,1,4,19,39,68,3.579
+player,2025,total_points,Total Points,7247,-9,16,37,60,115,3.108
+player,2025,tries,Tries,1420,1,1,1,2,4,4.000
+player,2025,try_assists,Try Assists,1136,1,1,1,2,5,5.000
+player,2026,40_20,40/20,7,1,1,1,1,1,1.000
+player,2026,all_run_metres,All Run Metres,1108,3,30,94,178,325,3.457
+player,2026,all_runs,All Runs,1108,1,4,10,18,29,2.900
+player,2026,bomb_kicks,Bomb Kicks,125,1,1,2,6,10,5.000
+player,2026,conversion_attempts,Conversion Attempts,72,1,1,3,7,9,3.000
+player,2026,conversions,Conversions,69,1,1,3,5,8,2.667
+player,2026,cross_field_kicks,Cross Field Kicks,57,1,1,1,2,7,7.000
+player,2026,dummy_half_run_metres,Dummy Half Run Metres,239,1,5,12,35,98,8.167
+player,2026,dummy_half_runs,Dummy Half Runs,242,1,1,1,4,12,12.000
+player,2026,dummy_passes,Dummy Passes,571,1,1,2,6,18,9.000
+player,2026,errors,Errors,488,1,1,1,3,5,5.000
+player,2026,field_goals_1pt,1 Point Field Goals,3,1,1,1,1,1,1.000
+player,2026,grubbers,Grubbers,155,1,1,1,2,5,5.000
+player,2026,handling_errors,Handling Errors,443,1,1,1,2,6,6.000
+player,2026,hit_ups,Hit Ups,730,1,1,7,14,23,3.286
+player,2026,ineffective_tackles,Ineffective Tackles,613,1,1,1,3,5,5.000
+player,2026,kicked_dead,Kicked Dead,29,1,1,1,1,2,2.000
+player,2026,kicking_metres,Kicking Metres,257,1,10,60,407,887,14.783
+player,2026,kicks,Kicks,261,1,1,2,13,23,11.500
+player,2026,kicks_defused,Kicks Defused,212,1,1,1,3,10,10.000
+player,2026,line_break_assists,Line Break Assists,187,1,1,1,2,5,5.000
+player,2026,line_breaks,Line Breaks,244,1,1,1,2,3,3.000
+player,2026,minutes_played,Minutes Played,1123,1,26,73,80,90,1.233
+player,2026,missed_tackles,Missed Tackles,894,1,1,2,5,10,5.000
+player,2026,offloads,Offloads,425,1,1,1,3,6,6.000
+player,2026,on_report,On Report,58,1,1,1,1,1,1.000
+player,2026,one_on_one_lost,One on One Lost,10,1,1,1,1,1,1.000
+player,2026,one_on_one_steal,One on One Steal,10,1,1,1,1,1,1.000
+player,2026,passes,Passes,930,1,1,5,46,149,29.800
+player,2026,penalties,Penalties,282,1,1,1,2,4,4.000
+player,2026,penalty_goals,Penalty Goals,31,1,1,1,2,2,2.000
+player,2026,post_contact_metres,Post Contact Metres,1090,1,7,31,59,123,3.968
+player,2026,receipts,Receipts,1119,1,7,17,56,150,8.824
+player,2026,sin_bins,Sin Bins,19,1,1,1,1,1,1.000
+player,2026,stint_one,Stint One,1123,1,21.8,71.36666666666666,80,90,1.261
+player,2026,stint_two,Stint Two,274,0.95,4.666666666666667,17.175,29.4,50.1,2.917
+player,2026,tackle_breaks,Tackle Breaks,771,1,1,2,6,11,5.500
+player,2026,tackles_made,Tackles Made,1112,1,4,19,38,70,3.684
+player,2026,total_points,Total Points,1119,-1,16,36,61,92,2.556
+player,2026,tries,Tries,223,1,1,1,2,4,4.000
+player,2026,try_assists,Try Assists,181,1,1,1,2,4,4.000
+team,1998,conversions,Conversions,500,0,1,3,6,10,3.333
+team,1998,errors,Errors,2,34,34,36,34,38,1.056
+team,1998,line_breaks,Line Breaks,452,0,1,223,280,351,1.574
+team,1998,missed_tackles,Missed Tackles,2,22,22,24,22,26,1.083
+team,1998,offloads,Offloads,20,0,0,1,15,427,427.000
+team,1998,penalty_goals,Penalty Goals,170,0,0,1,1,3,3.000
+team,1998,sin_bins,Sin Bins,20,0,0,1,2,12,12.000
+team,1998,tackles_made,Tackles Made,2,42,42,49,42,56,1.143
+team,1998,time_in_possession,Time In Possession,452,0,2.183333333333333,38,81,99,2.605
+team,1998,tries,Tries,500,0,1,3,6,11,3.667
+team,1999,conversions,Conversions,406,0,1,3,6,10,3.333
+team,1999,errors,Errors,2,16,16,16.5,16,17,1.030
+team,1999,line_breaks,Line Breaks,406,0,1,233.5,291,349,1.495
+team,1999,missed_tackles,Missed Tackles,2,36,36,36,36,36,1.000
+team,1999,offloads,Offloads,24,0,0,1,14,456,456.000
+team,1999,penalty_goals,Penalty Goals,170,0,0,1,1,2,2.000
+team,1999,sin_bins,Sin Bins,16,0,0,1,2,14,14.000
+team,1999,tackles_made,Tackles Made,2,285,285,287.5,285,290,1.009
+team,1999,time_in_possession,Time In Possession,406,2.1166666666666667,3.066666666666667,19.766666666666666,24.216666666666665,32.8,1.659
+team,1999,tries,Tries,406,0,1,3,6,12,4.000
+team,2000,all_run_metres,All Run Metres,326,2,8,12,19,1750,145.833
+team,2000,conversions,Conversions,378,0,1,3,6,11,3.667
+team,2000,errors,Errors,2,4,4,4.5,4,5,1.111
+team,2000,line_breaks,Line Breaks,326,0,0,222,296,390,1.757
+team,2000,missed_tackles,Missed Tackles,2,1,1,1,1,1,1.000
+team,2000,offloads,Offloads,28,0,0,1,1,449,449.000
+team,2000,penalty_goals,Penalty Goals,106,0,0,1,1,2,2.000
+team,2000,sin_bins,Sin Bins,20,0,0,1,2,10,10.000
+team,2000,tackles_made,Tackles Made,2,48,48,49,48,50,1.020
+team,2000,time_in_possession,Time In Possession,326,2.316666666666667,2.9833333333333334,20.933333333333334,26.733333333333334,33.15,1.584
+team,2000,tries,Tries,378,0,1,3,7,12,4.000
+team,2001,all_run_metres,All Run Metres,322,3,10,18,29,1711,95.056
+team,2001,conversions,Conversions,374,0,1,4,7,11,2.750
+team,2001,errors,Errors,2,2,2,4,2,6,1.500
+team,2001,line_breaks,Line Breaks,322,5,25,249,293,343,1.378
+team,2001,missed_tackles,Missed Tackles,2,0,0,1.5,0,3,2.000
+team,2001,offloads,Offloads,30,0,0,8.5,15,406,47.765
+team,2001,penalty_goals,Penalty Goals,52,0,0,1,1,2,2.000
+team,2001,sin_bins,Sin Bins,2,0,0,12,0,24,2.000
+team,2001,tackles_made,Tackles Made,2,37,37,37.5,37,38,1.013
+team,2001,time_in_possession,Time In Possession,322,2.0166666666666666,2.4,2.95,18.4,28.75,9.746
+team,2001,tries,Tries,374,0,2,4,7,11,2.750
+team,2002,all_run_metres,All Run Metres,322,4,9,15,23,1685,112.333
+team,2002,conversions,Conversions,366,0,1,3,6,12,4.000
+team,2002,errors,Errors,2,9,9,11.5,9,14,1.217
+team,2002,line_breaks,Line Breaks,322,0,19,260,307,384,1.477
+team,2002,missed_tackles,Missed Tackles,2,24,24,34.5,24,45,1.304
+team,2002,offloads,Offloads,60,0,0,8,13,407,50.875
+team,2002,penalty_goals,Penalty Goals,64,0,0,1,1,3,3.000
+team,2002,sin_bins,Sin Bins,6,0,0,1,2,6,6.000
+team,2002,tackles_made,Tackles Made,2,305,305,310.5,305,316,1.018
+team,2002,time_in_possession,Time In Possession,322,2.183333333333333,2.65,3.1333333333333333,21.066666666666666,30.566666666666666,9.755
+team,2002,tries,Tries,366,0,2,4,7,12,3.000
+team,2003,all_run_metres,All Run Metres,350,8,15,23,32,43,1.870
+team,2003,conversions,Conversions,350,0,1,3,6,11,3.667
+team,2003,kicking_metres,Kicking Metres,6,0,0,0.5,1,1,2.000
+team,2003,kicks,Kicks,90,0,0,7,16,19,2.714
+team,2003,line_breaks,Line Breaks,350,0,7,14,23,626,44.714
+team,2003,offloads,Offloads,346,11,21,34,297,401,11.794
+team,2003,penalty_goals,Penalty Goals,94,0,0,1,1,2,2.000
+team,2003,sin_bins,Sin Bins,12,0,0,1,1,1,1.000
+team,2003,tackle_breaks,Tackle Breaks,350,9,14,20,25,296,14.800
+team,2003,time_in_possession,Time In Possession,350,2.4833333333333334,18.55,22.191666666666666,26.1,31.25,1.408
+team,2003,tries,Tries,350,0,2,4,7,10,2.500
+team,2004,all_run_metres,All Run Metres,368,7,15,22.5,33,1585,70.444
+team,2004,conversions,Conversions,368,0,1,3,6,11,3.667
+team,2004,errors,Errors,2,12,12,12,12,12,1.000
+team,2004,ineffective_tackles,Ineffective Tackles,2,4,4,5.5,4,7,1.273
+team,2004,kicking_metres,Kicking Metres,8,0,0,1,3,5,5.000
+team,2004,kicks,Kicks,80,0,0,4,17,602,150.500
+team,2004,line_breaks,Line Breaks,368,3,8,15,23,45,3.000
+team,2004,missed_tackles,Missed Tackles,2,16,16,17,16,18,1.059
+team,2004,offloads,Offloads,368,14,21,36,290,389,10.806
+team,2004,penalty_goals,Penalty Goals,114,0,0,1,1,2,2.000
+team,2004,sin_bins,Sin Bins,2,0,0,0.5,0,1,2.000
+team,2004,tackle_breaks,Tackle Breaks,368,8,14,19,24,37,1.947
+team,2004,tackles_made,Tackles Made,2,33,33,35,33,37,1.057
+team,2004,time_in_possession,Time In Possession,368,13.633333333333333,18.4,23.05,27.533333333333335,33.46666666666667,1.452
+team,2004,tries,Tries,368,0,2,4,7,13,3.250
+team,2005,all_run_metres,All Run Metres,364,5,16,25,38,1667,66.680
+team,2005,conversions,Conversions,364,0,1,3,6,10,3.333
+team,2005,errors,Errors,2,12,12,12,12,12,1.000
+team,2005,ineffective_tackles,Ineffective Tackles,2,3,3,3,3,3,1.000
+team,2005,kicking_metres,Kicking Metres,12,0,0,1,1,2,2.000
+team,2005,kicks,Kicks,72,0,0,9.5,17,729,76.737
+team,2005,line_breaks,Line Breaks,364,2,8,14.5,24,939,64.759
+team,2005,missed_tackles,Missed Tackles,2,15,15,21.5,15,28,1.302
+team,2005,offloads,Offloads,344,9,25,39,297,446,11.436
+team,2005,penalty_goals,Penalty Goals,96,0,0,1,1,2,2.000
+team,2005,sin_bins,Sin Bins,10,0,0,1,6,12,12.000
+team,2005,tackle_breaks,Tackle Breaks,364,7,14,19,26,372,19.579
+team,2005,tackles_made,Tackles Made,2,45,45,50,45,55,1.100
+team,2005,time_in_possession,Time In Possession,364,2.316666666666667,18.633333333333333,23.225,27.266666666666666,35.166666666666664,1.514
+team,2005,tries,Tries,364,0,2,4,7,12,3.000
+team,2006,all_run_metres,All Run Metres,348,1,7,16,40,1616,101.000
+team,2006,conversions,Conversions,348,0,1,3,6,11,3.667
+team,2006,errors,Errors,2,4,4,4.5,4,5,1.111
+team,2006,ineffective_tackles,Ineffective Tackles,2,9,9,11,9,13,1.182
+team,2006,kicking_metres,Kicking Metres,6,0,0,0.5,1,2,4.000
+team,2006,kicks,Kicks,30,0,0,8,13,843,105.375
+team,2006,line_breaks,Line Breaks,348,2,10,467,757,1103,2.362
+team,2006,missed_tackles,Missed Tackles,2,44,44,46.5,44,49,1.054
+team,2006,offloads,Offloads,162,0,1,32,251,409,12.781
+team,2006,penalty_goals,Penalty Goals,76,0,0,1,1,2,2.000
+team,2006,sin_bins,Sin Bins,6,0,0,1,1,2,2.000
+team,2006,tackle_breaks,Tackle Breaks,348,8,16,274.5,346,422,1.537
+team,2006,tackles_made,Tackles Made,2,301,301,343,301,385,1.122
+team,2006,time_in_possession,Time In Possession,348,1.7333333333333334,2.6166666666666667,3.183333333333333,24.916666666666668,30.366666666666667,9.539
+team,2006,tries,Tries,348,0,2,4,6,12,3.000
+team,2007,all_run_metres,All Run Metres,386,1,13,32,49,1981,61.906
+team,2007,conversions,Conversions,386,0,1,3,5,11,3.667
+team,2007,errors,Errors,2,2,2,3.5,2,5,1.429
+team,2007,ineffective_tackles,Ineffective Tackles,2,9,9,9.5,9,10,1.053
+team,2007,kicking_metres,Kicking Metres,6,0,0,1,623,692,692.000
+team,2007,kicks,Kicks,48,0,0,9,17,26,2.889
+team,2007,line_breaks,Line Breaks,386,2,5,12,492,831,69.250
+team,2007,missed_tackles,Missed Tackles,2,36,36,53,36,70,1.321
+team,2007,offloads,Offloads,326,0,23,39,315,384,9.846
+team,2007,penalty_goals,Penalty Goals,100,0,0,1,1,1,1.000
+team,2007,sin_bins,Sin Bins,12,0,0,1,1,10,10.000
+team,2007,tackle_breaks,Tackle Breaks,386,10,15,21,289,437,20.810
+team,2007,tackles_made,Tackles Made,2,263,263,312.5,263,362,1.158
+team,2007,time_in_possession,Time In Possession,386,2.1333333333333333,2.966666666666667,21.733333333333334,25.966666666666665,31.95,1.470
+team,2007,tries,Tries,386,0,1,3,6,13,4.333
+team,2008,all_run_metres,All Run Metres,386,6,21,35,50,1982,56.629
+team,2008,conversions,Conversions,386,0,1,3,5,11,3.667
+team,2008,errors,Errors,2,4,4,4.5,4,5,1.111
+team,2008,ineffective_tackles,Ineffective Tackles,2,9,9,11,9,13,1.182
+team,2008,kicking_metres,Kicking Metres,6,0,0,1,1,1,1.000
+team,2008,kicks,Kicks,46,0,0,10.5,14,706,67.238
+team,2008,line_breaks,Line Breaks,386,0,5,11,18,666,60.545
+team,2008,missed_tackles,Missed Tackles,2,0,0,0.5,0,1,2.000
+team,2008,offloads,Offloads,380,10,22,37,299,441,11.919
+team,2008,penalty_goals,Penalty Goals,76,0,0,1,1,8,8.000
+team,2008,sin_bins,Sin Bins,6,0,0,0.5,1,1,2.000
+team,2008,tackle_breaks,Tackle Breaks,386,9,14,19,24,341,17.947
+team,2008,tackles_made,Tackles Made,2,32,32,41,32,50,1.220
+team,2008,time_in_possession,Time In Possession,386,2.183333333333333,17.416666666666668,21.616666666666667,25.833333333333332,30.333333333333332,1.403
+team,2008,tries,Tries,386,0,1,4,6,13,3.250
+team,2009,all_run_metres,All Run Metres,394,7,20,34,48,1685,49.559
+team,2009,conversions,Conversions,394,0,1,3,6,9,3.000
+team,2009,errors,Errors,2,9,9,9,9,9,1.000
+team,2009,ineffective_tackles,Ineffective Tackles,2,3,3,4,3,5,1.250
+team,2009,kicking_metres,Kicking Metres,8,0,0,1,1,2,2.000
+team,2009,kicks,Kicks,58,0,0,8,14,807,100.875
+team,2009,line_breaks,Line Breaks,394,1,6,12,20,921,76.750
+team,2009,missed_tackles,Missed Tackles,2,12,12,23,12,34,1.478
+team,2009,offloads,Offloads,384,13,21,38,315,422,11.105
+team,2009,penalty_goals,Penalty Goals,112,0,0,1,1,2,2.000
+team,2009,sin_bins,Sin Bins,6,0,0,0.5,1,10,20.000
+team,2009,tackle_breaks,Tackle Breaks,394,5,15,20,25,380,19.000
+team,2009,tackles_made,Tackles Made,2,38,38,43,38,48,1.116
+team,2009,time_in_possession,Time In Possession,394,2.5166666666666666,17.783333333333335,21.741666666666667,25.5,32.36666666666667,1.489
+team,2009,tries,Tries,394,0,2,3,6,10,3.333
+team,2010,all_run_metres,All Run Metres,390,4,22,34.5,48,1472,42.667
+team,2010,conversions,Conversions,390,0,1,3,6,9,3.000
+team,2010,errors,Errors,2,2,2,3.5,2,5,1.429
+team,2010,ineffective_tackles,Ineffective Tackles,2,12,12,13,12,14,1.077
+team,2010,kicking_metres,Kicking Metres,2,1,1,2,1,3,1.500
+team,2010,kicks,Kicks,38,0,1,11,17,696,63.273
+team,2010,line_breaks,Line Breaks,390,1,6,12,20,750,62.500
+team,2010,missed_tackles,Missed Tackles,2,0,0,0.5,0,1,2.000
+team,2010,offloads,Offloads,380,0,24,38,305,383,10.079
+team,2010,penalty_goals,Penalty Goals,92,0,0,1,1,2,2.000
+team,2010,sin_bins,Sin Bins,8,0,0,1,6,8,8.000
+team,2010,tackle_breaks,Tackle Breaks,390,9,14,19,24,361,19.000
+team,2010,tackles_made,Tackles Made,2,18,18,27,18,36,1.333
+team,2010,time_in_possession,Time In Possession,390,2.3833333333333333,17.85,22.05,25.75,29.55,1.340
+team,2010,tries,Tries,390,0,1,3,6,12,4.000
+team,2011,all_run_metres,All Run Metres,378,7,22,34,48,1661,48.853
+team,2011,conversions,Conversions,378,0,1,3,5,8,2.667
+team,2011,errors,Errors,2,3,3,3,3,3,1.000
+team,2011,ineffective_tackles,Ineffective Tackles,2,9,9,14,9,19,1.357
+team,2011,kicking_metres,Kicking Metres,8,0,0,1,1,2,2.000
+team,2011,kicks,Kicks,46,0,0,9,16,844,93.778
+team,2011,line_breaks,Line Breaks,378,0,5,11,18,708,64.364
+team,2011,missed_tackles,Missed Tackles,2,0,0,0.5,0,1,2.000
+team,2011,offloads,Offloads,372,14,23,37,290,484,13.081
+team,2011,penalty_goals,Penalty Goals,108,0,0,1,1,2,2.000
+team,2011,sin_bins,Sin Bins,10,0,0,1,2,12,12.000
+team,2011,tackle_breaks,Tackle Breaks,378,6,15,20,25,360,18.000
+team,2011,tackles_made,Tackles Made,2,53,53,56,53,59,1.054
+team,2011,time_in_possession,Time In Possession,378,2.7,18.583333333333332,22.225,26.116666666666667,31.766666666666666,1.429
+team,2011,tries,Tries,378,0,1,3,6,10,3.333
+team,2012,all_run_metres,All Run Metres,390,6,21,32,46,1558,48.688
+team,2012,conversions,Conversions,390,0,1,3,6,9,3.000
+team,2012,errors,Errors,2,9,9,9.5,9,10,1.053
+team,2012,ineffective_tackles,Ineffective Tackles,2,4,4,4.5,4,5,1.111
+team,2012,kicking_metres,Kicking Metres,4,0,0,1.5,2,5,3.333
+team,2012,kicks,Kicks,38,0,0,9.5,15,644,67.789
+team,2012,line_breaks,Line Breaks,390,1,5,10,17,689,68.900
+team,2012,missed_tackles,Missed Tackles,2,3,3,13,3,23,1.769
+team,2012,offloads,Offloads,384,8,22,35,312,401,11.457
+team,2012,penalty_goals,Penalty Goals,80,0,0,0.5,1,2,4.000
+team,2012,sin_bins,Sin Bins,4,0,0,2.5,4,14,5.600
+team,2012,tackle_breaks,Tackle Breaks,390,9,14,20,25,352,17.600
+team,2012,tackles_made,Tackles Made,2,40,40,45.5,40,51,1.121
+team,2012,time_in_possession,Time In Possession,390,2.283333333333333,18.483333333333334,22.791666666666668,26.716666666666665,31.833333333333332,1.397
+team,2012,tries,Tries,390,0,1,3,6,9,3.000
+team,2013,all_run_metres,All Run Metres,390,849,1235,1495.5,1732,1929,1.290
+team,2013,all_runs,All Runs,390,96,135,161,184,218,1.354
+team,2013,bomb_kicks,Bomb Kicks,390,0,1,3,7,369,123.000
+team,2013,conversions,Conversions,390,0,1,2,5,10,5.000
+team,2013,dummy_passes,Dummy Passes,390,0,5,17.5,25,38,2.171
+team,2013,errors,Errors,206,0,0,4,10,26,6.500
+team,2013,forced_drop_outs,Forced Drop Outs,390,0,0,2,4,9,4.500
+team,2013,grubbers,Grubbers,390,0,2,8,346,425,53.125
+team,2013,ineffective_tackles,Ineffective Tackles,338,0,1,7,19,34,4.857
+team,2013,kicking_metres,Kicking Metres,390,0,0,3,664,931,310.333
+team,2013,kicks,Kicks,390,10,17,369.5,663,966,2.614
+team,2013,line_breaks,Line Breaks,390,0,1,3,7,38,12.667
+team,2013,missed_tackles,Missed Tackles,390,0,1,16,38,381,23.813
+team,2013,offloads,Offloads,390,2,7,329,415,528,1.605
+team,2013,penalties,Penalties Conceded,66,0,0,1,5,12,12.000
+team,2013,penalty_goals,Penalty Goals,390,0,0,1,16,38,38.000
+team,2013,post_contact_metres,Post Contact Metres,390,223,395,510,602,721,1.414
+team,2013,receipts,Receipts,390,136,180,231,412,533,2.307
+team,2013,sin_bins,Sin Bins,224,0,0,6,16,36,6.000
+team,2013,tackle_breaks,Tackle Breaks,390,6,13,22,36,55,2.500
+team,2013,tackles_made,Tackles Made,390,0,7,34,349,476,14.000
+team,2013,time_in_possession,Time In Possession,390,6.716666666666667,11.966666666666667,18.683333333333334,29.016666666666666,37.21666666666667,1.992
+team,2013,total_passes,Total Passes,390,0,5,22,221,287,13.045
+team,2013,tries,Tries,390,0,1,3,6,12,4.000
+team,2014,all_run_metres,All Run Metres,396,778,1229,1495.5,1732,2082,1.392
+team,2014,all_runs,All Runs,396,91,139,161,184,218,1.354
+team,2014,bomb_kicks,Bomb Kicks,396,0,1,4,8,396,99.000
+team,2014,conversions,Conversions,396,0,1,2,5,9,4.500
+team,2014,dummy_passes,Dummy Passes,396,1,8,17,23,32,1.882
+team,2014,errors,Errors,230,0,0,1,9,29,29.000
+team,2014,forced_drop_outs,Forced Drop Outs,396,0,0,2,5,11,5.500
+team,2014,grubbers,Grubbers,396,0,2,25.5,352,472,18.510
+team,2014,ineffective_tackles,Ineffective Tackles,350,0,1,6,16,36,6.000
+team,2014,kicking_metres,Kicking Metres,396,0,0,3,587,984,328.000
+team,2014,kicks,Kicks,396,11,17,411.5,634,860,2.090
+team,2014,line_breaks,Line Breaks,396,0,1,4,7,36,9.000
+team,2014,missed_tackles,Missed Tackles,396,0,0,16,34,369,23.063
+team,2014,offloads,Offloads,396,1,8,347.5,423,542,1.560
+team,2014,penalties,Penalties Conceded,60,0,0,1,6,9,9.000
+team,2014,penalty_goals,Penalty Goals,396,0,0,1,16,42,42.000
+team,2014,post_contact_metres,Post Contact Metres,396,287,412,510,600,757,1.484
+team,2014,receipts,Receipts,396,145,178,227.5,422,484,2.127
+team,2014,sin_bins,Sin Bins,244,0,0,6,18,30,5.000
+team,2014,tackle_breaks,Tackle Breaks,396,5,15,25,35,48,1.920
+team,2014,tackles_made,Tackles Made,396,0,11,33,341,409,12.394
+team,2014,time_in_possession,Time In Possession,396,7.2,12.433333333333334,18.358333333333334,29.2,38.88333333333333,2.118
+team,2014,total_passes,Total Passes,396,1,6,15,227,287,19.133
+team,2014,tries,Tries,396,0,1,3,6,12,4.000
+team,2015,all_run_metres,All Run Metres,388,1038,1312,1578,1838,2083,1.320
+team,2015,all_runs,All Runs,388,117,147,171,197,229,1.339
+team,2015,bomb_kicks,Bomb Kicks,388,0,1,4,8,429,107.250
+team,2015,conversions,Conversions,388,0,0,2,5,8,4.000
+team,2015,dummy_passes,Dummy Passes,388,8,15,21,29,46,2.190
+team,2015,errors,Errors,188,0,0,2,9,29,14.500
+team,2015,forced_drop_outs,Forced Drop Outs,388,0,0,2,6,9,4.500
+team,2015,grubbers,Grubbers,388,0,3,293,372,444,1.515
+team,2015,ineffective_tackles,Ineffective Tackles,306,0,1,6,17,31,5.167
+team,2015,kicking_metres,Kicking Metres,388,0,0,3,556,869,289.667
+team,2015,kicks,Kicks,388,9,17,412.5,645,892,2.162
+team,2015,line_breaks,Line Breaks,388,0,1,4,7,12,3.000
+team,2015,missed_tackles,Missed Tackles,388,0,0,15,34,367,24.467
+team,2015,offloads,Offloads,388,1,7,357,434,517,1.448
+team,2015,penalties,Penalties Conceded,56,0,0,1,8,10,10.000
+team,2015,penalty_goals,Penalty Goals,388,0,0,1,14,36,36.000
+team,2015,post_contact_metres,Post Contact Metres,388,331,436,535,644,771,1.441
+team,2015,receipts,Receipts,388,139,186,227,418,511,2.251
+team,2015,sin_bins,Sin Bins,268,0,0,6,18,30,5.000
+team,2015,tackle_breaks,Tackle Breaks,388,7,15,25,37,48,1.920
+team,2015,tackles_made,Tackles Made,388,0,8,29,351,438,15.103
+team,2015,time_in_possession,Time In Possession,388,5.1,12.05,18.716666666666665,28.65,43.56666666666667,2.328
+team,2015,total_passes,Total Passes,388,4,16,30,226,290,9.667
+team,2015,tries,Tries,388,0,1,3,6,10,3.333
+team,2016,all_run_metres,All Run Metres,392,858,1224,1520,1822,2140,1.408
+team,2016,all_runs,All Runs,392,112,145,171,194,226,1.322
+team,2016,bomb_kicks,Bomb Kicks,392,0,1,4,8,350,87.500
+team,2016,conversions,Conversions,392,0,1,2,5,9,4.500
+team,2016,dummy_passes,Dummy Passes,392,2,11,18,25,53,2.944
+team,2016,errors,Errors,392,0,1,7,11,30,4.286
+team,2016,forced_drop_outs,Forced Drop Outs,392,0,0,2,6,10,5.000
+team,2016,grubbers,Grubbers,392,0,3,268,357,436,1.627
+team,2016,ineffective_tackles,Ineffective Tackles,392,0,5,9,16,31,3.444
+team,2016,interchanges_used,Interchanges Used,24,0,0,1,7,8,8.000
+team,2016,kicking_metres,Kicking Metres,392,0,0,3,530,814,271.333
+team,2016,kicks,Kicks,392,10,16,372,605,776,2.086
+team,2016,line_breaks,Line Breaks,392,0,1,4,7,15,3.750
+team,2016,missed_tackles,Missed Tackles,392,0,1,18,40,396,22.000
+team,2016,offloads,Offloads,392,0,6,347,426,532,1.533
+team,2016,penalties,Penalties Conceded,358,0,0,7,9,14,2.000
+team,2016,penalty_goals,Penalty Goals,392,0,0,1,14,32,32.000
+team,2016,post_contact_metres,Post Contact Metres,392,132,320,452.5,572,730,1.613
+team,2016,receipts,Receipts,392,145,178,230,420,513,2.230
+team,2016,sin_bins,Sin Bins,284,0,0,8,16,28,3.500
+team,2016,tackle_breaks,Tackle Breaks,392,10,17,27,39,55,2.037
+team,2016,tackles_made,Tackles Made,392,0,16,33,352,437,13.242
+team,2016,time_in_possession,Time In Possession,392,16.916666666666668,22.516666666666666,26.416666666666668,30.6,35.233333333333334,1.334
+team,2016,total_passes,Total Passes,392,3,11,26,229,295,11.346
+team,2016,tries,Tries,392,0,1,3,6,11,3.667
+team,2017,all_run_metres,All Run Metres,384,925,1299,1565,1807,2053,1.312
+team,2017,all_runs,All Runs,384,115,145,171,197,228,1.333
+team,2017,bomb_kicks,Bomb Kicks,384,0,1,4,8,366,91.500
+team,2017,conversions,Conversions,386,0,1,2,5,12,6.000
+team,2017,dummy_passes,Dummy Passes,384,4,13,20,30,59,2.950
+team,2017,errors,Errors,380,0,2,7,11,29,4.143
+team,2017,forced_drop_outs,Forced Drop Outs,384,0,0,2,6,11,5.500
+team,2017,grubbers,Grubbers,384,0,3,278,351,405,1.457
+team,2017,ineffective_tackles,Ineffective Tackles,384,0,5,9,16,32,3.556
+team,2017,interchanges_used,Interchanges Used,20,0,0,1,2,7,7.000
+team,2017,kicking_metres,Kicking Metres,384,0,0,2,519,891,445.500
+team,2017,kicks,Kicks,384,8,17,406.5,618,850,2.091
+team,2017,line_breaks,Line Breaks,384,0,1,4,7,13,3.250
+team,2017,missed_tackles,Missed Tackles,384,0,0,14,39,378,27.000
+team,2017,offloads,Offloads,384,2,7,353,421,517,1.465
+team,2017,penalties,Penalties Conceded,356,0,1,7,9,14,2.000
+team,2017,penalty_goals,Penalty Goals,384,0,0,1,12,36,36.000
+team,2017,post_contact_metres,Post Contact Metres,384,266,394,500.5,600,748,1.495
+team,2017,receipts,Receipts,384,133,175,218.5,400,465,2.128
+team,2017,sin_bins,Sin Bins,286,0,0,6,18,30,5.000
+team,2017,tackle_breaks,Tackle Breaks,384,12,20,30,45,67,2.233
+team,2017,tackles_made,Tackles Made,384,0,16,38,331,384,10.105
+team,2017,time_in_possession,Time In Possession,386,1,21.666666666666668,26.09166666666667,30.183333333333334,36.333333333333336,1.393
+team,2017,total_passes,Total Passes,384,3,14,29,214,271,9.345
+team,2017,tries,Tries,386,0,1,3,6,11,3.667
+team,2018,all_run_metres,All Run Metres,392,808,1230,1495,1765,2136,1.429
+team,2018,all_runs,All Runs,392,101,142,166,192,214,1.289
+team,2018,bomb_kicks,Bomb Kicks,392,0,1,4,7,361,90.250
+team,2018,conversions,Conversions,392,0,1,2,4,8,4.000
+team,2018,dummy_passes,Dummy Passes,392,1,13,19,26,53,2.789
+team,2018,errors,Errors,392,0,0,8,11,18,2.250
+team,2018,forced_drop_outs,Forced Drop Outs,392,0,1,3,6,11,3.667
+team,2018,grubbers,Grubbers,392,0,3,301.5,361,449,1.489
+team,2018,ineffective_tackles,Ineffective Tackles,392,0,5,9,14,40,4.444
+team,2018,interchanges_used,Interchanges Used,26,0,0,1,1,8,8.000
+team,2018,kicking_metres,Kicking Metres,392,0,0,2,459,724,362.000
+team,2018,kicks,Kicks,392,11,16,411,577,991,2.411
+team,2018,line_breaks,Line Breaks,392,0,1,3.5,7,14,4.000
+team,2018,missed_tackles,Missed Tackles,392,0,1,15,36,266,17.733
+team,2018,offloads,Offloads,392,1,9,363.5,424,486,1.337
+team,2018,penalties,Penalties Conceded,346,0,0,6,8,13,2.167
+team,2018,penalty_goals,Penalty Goals,392,0,0,1,3,34,34.000
+team,2018,post_contact_metres,Post Contact Metres,392,281,383,489,600,763,1.560
+team,2018,receipts,Receipts,392,128,176,219,378,487,2.224
+team,2018,sin_bins,Sin Bins,374,0,0,2,16,38,19.000
+team,2018,tackle_breaks,Tackle Breaks,392,10,21,31,43,63,2.032
+team,2018,tackles_made,Tackles Made,392,0,22,35,331,426,12.171
+team,2018,time_in_possession,Time In Possession,392,17.933333333333334,22.45,26.808333333333334,30.833333333333332,42.85,1.598
+team,2018,total_passes,Total Passes,392,0,11,28,210,291,10.393
+team,2018,tries,Tries,392,0,1,3,6,10,3.333
+team,2019,all_run_metres,All Run Metres,388,689,1308,1578.5,1871,2437,1.544
+team,2019,all_runs,All Runs,388,102,152,178,201,263,1.478
+team,2019,bomb_kicks,Bomb Kicks,388,0,1,4,7,13,3.250
+team,2019,conversions,Conversions,388,0,1,2,4,9,4.500
+team,2019,dummy_passes,Dummy Passes,388,0,4,11,22,55,5.000
+team,2019,errors,Errors,388,0,5,8,14,31,3.875
+team,2019,forced_drop_outs,Forced Drop Outs,388,0,0,2,4,11,5.500
+team,2019,grubbers,Grubbers,388,0,2,5,9,387,77.400
+team,2019,ineffective_tackles,Ineffective Tackles,388,0,4,11,21,39,3.545
+team,2019,interchanges_used,Interchanges Used,82,0,0,2,8,9,4.500
+team,2019,kicking_metres,Kicking Metres,388,0,352,517,684,872,1.687
+team,2019,kicks,Kicks,388,11,15,20,25,733,36.650
+team,2019,line_breaks,Line Breaks,388,0,1,3,6,12,4.000
+team,2019,missed_tackles,Missed Tackles,388,0,18,32,318,435,13.594
+team,2019,offloads,Offloads,388,1,5,10,18,453,45.300
+team,2019,penalties,Penalties Conceded,386,0,0,6,9,18,3.000
+team,2019,penalty_goals,Penalty Goals,388,0,0,1,10,30,30.000
+team,2019,post_contact_metres,Post Contact Metres,388,225,334,451,587,751,1.665
+team,2019,receipts,Receipts,388,164,331,390,447,519,1.331
+team,2019,sin_bins,Sin Bins,312,0,0,1,16,30,30.000
+team,2019,tackle_breaks,Tackle Breaks,388,8,19,31,42,67,2.161
+team,2019,tackles_made,Tackles Made,388,1,5,325.5,381,437,1.343
+team,2019,time_in_possession,Time In Possession,388,16.916666666666668,23.3,26.808333333333334,30.883333333333333,37.983333333333334,1.417
+team,2019,total_passes,Total Passes,388,4,175,210,248,302,1.438
+team,2019,tries,Tries,388,0,1,3,6,11,3.667
+team,2020,all_run_metres,All Run Metres,316,136,1354,1676,1987,2423,1.446
+team,2020,all_runs,All Runs,316,15,159,184.5,209,247,1.339
+team,2020,bomb_kicks,Bomb Kicks,316,0,1,4,7,13,3.250
+team,2020,conversions,Conversions,316,0,1,2,5,9,4.500
+team,2020,dummy_passes,Dummy Passes,316,2,8,17,29,48,2.824
+team,2020,errors,Errors,316,1,3,8,14,26,3.250
+team,2020,forced_drop_outs,Forced Drop Outs,316,0,0,2,4,10,5.000
+team,2020,grubbers,Grubbers,316,0,2,4,8,438,109.500
+team,2020,ineffective_tackles,Ineffective Tackles,316,0,4,11,20,37,3.364
+team,2020,inside_10_metres,Inside 10 Metres,284,0,0,2,8,8,4.000
+team,2020,interchanges_used,Interchanges Used,194,0,0,7,8,8,1.143
+team,2020,kicking_metres,Kicking Metres,316,229,385,557,723,1163,2.088
+team,2020,kicks,Kicks,316,10,15,21,26,36,1.714
+team,2020,line_breaks,Line Breaks,316,0,1,3.5,7,12,3.429
+team,2020,missed_tackles,Missed Tackles,316,0,16,29,341,463,15.966
+team,2020,offloads,Offloads,316,1,5,9,15,23,2.556
+team,2020,penalties,Penalties Conceded,316,0,1,4,8,17,4.250
+team,2020,penalty_goals,Penalty Goals,316,0,0,1,14,30,30.000
+team,2020,post_contact_metres,Post Contact Metres,316,0,420,572.5,740,987,1.724
+team,2020,receipts,Receipts,316,259,356,414,473,572,1.382
+team,2020,ruck_infringements,Ruck Infringements,314,0,0,3,8,11,3.667
+team,2020,sin_bins,Sin Bins,236,0,0,2,16,34,17.000
+team,2020,tackle_breaks,Tackle Breaks,316,10,17,28,40,56,2.000
+team,2020,tackles_made,Tackles Made,316,1,6,335,399,526,1.570
+team,2020,time_in_possession,Time In Possession,316,18.516666666666666,23.783333333333335,27.525,31.85,39.6,1.439
+team,2020,total_passes,Total Passes,316,135,187,226.5,261,313,1.382
+team,2020,tries,Tries,316,0,1,3,6,10,3.333
+team,2021,all_run_metres,All Run Metres,382,775,1330,1655.5,1956,2413,1.458
+team,2021,all_runs,All Runs,382,115,153,183.5,211,263,1.433
+team,2021,bomb_kicks,Bomb Kicks,382,0,1,4,7,13,3.250
+team,2021,conversions,Conversions,382,0,1,3,5,11,3.667
+team,2021,dummy_passes,Dummy Passes,382,0,4,14,28,42,3.000
+team,2021,errors,Errors,382,0,2,8,13,31,3.875
+team,2021,forced_drop_outs,Forced Drop Outs,382,0,0,1,4,8,8.000
+team,2021,grubbers,Grubbers,382,0,2,4,8,387,96.750
+team,2021,ineffective_tackles,Ineffective Tackles,382,0,6,11.5,20,39,3.391
+team,2021,inside_10_metres,Inside 10 Metres,380,0,0,1,7,9,9.000
+team,2021,interchanges_used,Interchanges Used,360,0,0,1,8,12,12.000
+team,2021,kicking_metres,Kicking Metres,382,178,368,531,729,896,1.687
+team,2021,kicks,Kicks,382,9,15,20,25,30,1.500
+team,2021,line_breaks,Line Breaks,382,0,2,4,8,16,4.000
+team,2021,missed_tackles,Missed Tackles,382,0,18,32,303,424,13.250
+team,2021,offloads,Offloads,382,1,5,9,15,24,2.667
+team,2021,penalties,Penalties Conceded,382,0,1,3,7,15,5.000
+team,2021,penalty_goals,Penalty Goals,382,0,0,1,12,36,36.000
+team,2021,post_contact_metres,Post Contact Metres,382,191,407,538.5,670,880,1.634
+team,2021,receipts,Receipts,382,283,342,413,466,534,1.293
+team,2021,ruck_infringements,Ruck Infringements,382,0,0,2,4,10,5.000
+team,2021,sin_bins,Sin Bins,306,0,0,2,18,40,20.000
+team,2021,tackle_breaks,Tackle Breaks,382,10,19,30,42,69,2.300
+team,2021,tackles_made,Tackles Made,382,0,5,327,382,460,1.407
+team,2021,time_in_possession,Time In Possession,382,17.6,22.9,27.34166666666667,30.75,35.333333333333336,1.292
+team,2021,total_passes,Total Passes,382,148,185,225,263,320,1.422
+team,2021,tries,Tries,382,0,1,4,7,12,3.000
+team,2022,all_run_metres,All Run Metres,392,773,1291,1641.5,1947,2396,1.460
+team,2022,all_runs,All Runs,392,105,147,179,206,245,1.369
+team,2022,bomb_kicks,Bomb Kicks,392,0,0,4,7,13,3.250
+team,2022,conversions,Conversions,392,0,1,3,5,12,4.000
+team,2022,dummy_passes,Dummy Passes,392,0,2,10.5,25,52,4.952
+team,2022,errors,Errors,392,1,4,9,15,35,3.889
+team,2022,forced_drop_outs,Forced Drop Outs,392,0,0,1,4,9,9.000
+team,2022,grubbers,Grubbers,392,0,2,4,8,361,90.250
+team,2022,ineffective_tackles,Ineffective Tackles,392,0,3,12,22,39,3.250
+team,2022,inside_10_metres,Inside 10 Metres,388,0,0,1,6,9,9.000
+team,2022,interchanges_used,Interchanges Used,362,0,0,1,8,9,9.000
+team,2022,kicking_metres,Kicking Metres,392,163,377,535,691,998,1.865
+team,2022,kicks,Kicks,392,8,15,20,24,31,1.550
+team,2022,line_breaks,Line Breaks,392,0,2,5,8,13,2.600
+team,2022,missed_tackles,Missed Tackles,392,0,18,34,311,426,12.529
+team,2022,offloads,Offloads,392,1,5,9,16,25,2.778
+team,2022,penalties,Penalties Conceded,392,0,1,5,9,18,3.600
+team,2022,penalty_goals,Penalty Goals,392,0,0,1,10,36,36.000
+team,2022,post_contact_metres,Post Contact Metres,392,265,420,554.5,684,844,1.522
+team,2022,receipts,Receipts,392,265,349,407.5,464,540,1.325
+team,2022,ruck_infringements,Ruck Infringements,392,0,0,1,5,9,9.000
+team,2022,sin_bins,Sin Bins,316,0,0,2,18,32,16.000
+team,2022,tackle_breaks,Tackle Breaks,392,10,19,32,45,66,2.063
+team,2022,tackles_made,Tackles Made,392,0,5,317.5,376,451,1.420
+team,2022,time_in_possession,Time In Possession,392,15.716666666666667,22.983333333333334,27.1,30.833333333333332,35.65,1.315
+team,2022,total_passes,Total Passes,392,138,191,224,260,296,1.321
+team,2022,tries,Tries,392,0,1,4,7,13,3.250
+team,2023,all_run_metres,All Run Metres,420,1011,1376,1699.5,2007,2393,1.408
+team,2023,all_runs,All Runs,420,119,155,185,213,262,1.416
+team,2023,bomb_kicks,Bomb Kicks,420,0,1,4,8,15,3.750
+team,2023,conversions,Conversions,420,0,1,3,5,11,3.667
+team,2023,dummy_passes,Dummy Passes,420,0,4,13,25,69,5.308
+team,2023,errors,Errors,420,0,4,9,14,27,3.000
+team,2023,forced_drop_outs,Forced Drop Outs,420,0,0,1,3,8,8.000
+team,2023,grubbers,Grubbers,420,0,1,4,8,385,96.250
+team,2023,ineffective_tackles,Ineffective Tackles,420,0,5,12,23,42,3.500
+team,2023,inside_10_metres,Inside 10 Metres,418,0,0,1,8,10,10.000
+team,2023,interchanges_used,Interchanges Used,374,0,0,1,8,9,9.000
+team,2023,kicking_metres,Kicking Metres,420,273,413,549,729,1100,2.004
+team,2023,kicks,Kicks,420,11,16,20,25,31,1.550
+team,2023,line_breaks,Line Breaks,420,0,2,5,9,16,3.200
+team,2023,missed_tackles,Missed Tackles,420,0,20,36,311,410,11.389
+team,2023,offloads,Offloads,420,1,5,9,15,32,3.556
+team,2023,penalties,Penalties Conceded,420,0,1,4,9,18,4.500
+team,2023,penalty_goals,Penalty Goals,420,0,0,1,6,42,42.000
+team,2023,post_contact_metres,Post Contact Metres,420,280,370,501,627,856,1.709
+team,2023,receipts,Receipts,420,278,357,415.5,472,555,1.336
+team,2023,ruck_infringements,Ruck Infringements,420,0,0,1,4,11,11.000
+team,2023,sin_bins,Sin Bins,356,0,0,1,18,42,42.000
+team,2023,tackle_breaks,Tackle Breaks,420,11,21,34,49,73,2.147
+team,2023,tackles_made,Tackles Made,420,0,6,325.5,374,441,1.355
+team,2023,time_in_possession,Time In Possession,420,18.116666666666667,23.233333333333334,27.225,30.966666666666665,38.21666666666667,1.404
+team,2023,total_passes,Total Passes,420,144,190,227,268,316,1.392
+team,2023,tries,Tries,420,0,2,4,7,13,3.250
+team,2024,all_run_metres,All Run Metres,412,1026,1398,1692,2002,2362,1.396
+team,2024,all_runs,All Runs,412,124,162,187,215,269,1.439
+team,2024,bomb_kicks,Bomb Kicks,412,0,1,5,9,14,2.800
+team,2024,conversions,Conversions,412,0,1,3,6,10,3.333
+team,2024,dummy_passes,Dummy Passes,412,0,4,11,28,72,6.545
+team,2024,errors,Errors,412,0,4,9,15,40,4.444
+team,2024,forced_drop_outs,Forced Drop Outs,412,0,0,1,4,11,11.000
+team,2024,grubbers,Grubbers,412,0,1,4,11,418,104.500
+team,2024,ineffective_tackles,Ineffective Tackles,412,0,3,12,20,37,3.083
+team,2024,inside_10_metres,Inside 10 Metres,412,0,0,1,6,8,8.000
+team,2024,interchanges_used,Interchanges Used,388,0,0,1,8,10,10.000
+team,2024,kicking_metres,Kicking Metres,412,224,402,580.5,753,904,1.557
+team,2024,kicks,Kicks,412,11,16,20,25,32,1.600
+team,2024,line_breaks,Line Breaks,412,0,2,5,8,14,2.800
+team,2024,missed_tackles,Missed Tackles,412,0,17,35.5,309,423,11.915
+team,2024,offloads,Offloads,412,0,4,9,15,23,2.556
+team,2024,penalties,Penalties Conceded,412,0,1,4,8,16,4.000
+team,2024,penalty_goals,Penalty Goals,412,0,0,1,12,30,30.000
+team,2024,post_contact_metres,Post Contact Metres,412,320,450,555.5,686,904,1.627
+team,2024,receipts,Receipts,412,272,366,420,486,579,1.379
+team,2024,ruck_infringements,Ruck Infringements,412,0,0,2,4,10,5.000
+team,2024,sin_bins,Sin Bins,320,0,0,1,18,31,31.000
+team,2024,tackle_breaks,Tackle Breaks,412,16,23,34.5,46,64,1.855
+team,2024,tackles_made,Tackles Made,412,0,5,319,379,493,1.545
+team,2024,time_in_possession,Time In Possession,412,16.866666666666667,23.466666666666665,26.966666666666665,30.95,39.333333333333336,1.459
+team,2024,total_passes,Total Passes,412,155,197,231,272,322,1.394
+team,2024,tries,Tries,412,0,2,4,7,11,2.750
+team,2025,all_run_metres,All Run Metres,410,974,1368,1675.5,1966,2284,1.363
+team,2025,all_runs,All Runs,410,127,163,185,211,244,1.319
+team,2025,bomb_kicks,Bomb Kicks,410,0,1,4,8,18,4.500
+team,2025,conversions,Conversions,410,0,1,3,6,10,3.333
+team,2025,dummy_passes,Dummy Passes,410,0,4,17,33,71,4.176
+team,2025,errors,Errors,410,1,4,8,15,31,3.875
+team,2025,forced_drop_outs,Forced Drop Outs,410,0,0,1,4,13,13.000
+team,2025,grubbers,Grubbers,410,0,1,4,8,432,108.000
+team,2025,ineffective_tackles,Ineffective Tackles,410,0,5,12,22,44,3.667
+team,2025,inside_10_metres,Inside 10 Metres,392,0,0,1,7,8,8.000
+team,2025,interchanges_used,Interchanges Used,366,0,0,1,8,10,10.000
+team,2025,kicking_metres,Kicking Metres,410,312,419,594,777,1140,1.919
+team,2025,kicks,Kicks,410,12,16,21,26,35,1.667
+team,2025,line_breaks,Line Breaks,410,0,2,4,8,15,3.750
+team,2025,missed_tackles,Missed Tackles,410,0,18,32,300,454,14.188
+team,2025,offloads,Offloads,410,1,5,9,15,31,3.444
+team,2025,penalties,Penalties Conceded,410,0,1,4,8,17,4.250
+team,2025,penalty_goals,Penalty Goals,410,0,0,1,10,46,46.000
+team,2025,post_contact_metres,Post Contact Metres,410,308,438,535.5,657,763,1.425
+team,2025,receipts,Receipts,410,279,375,430,489,568,1.321
+team,2025,ruck_infringements,Ruck Infringements,410,0,0,2,5,11,5.500
+team,2025,sin_bins,Sin Bins,334,0,0,2,18,36,18.000
+team,2025,tackle_breaks,Tackle Breaks,410,10,21,32,44,67,2.094
+team,2025,tackles_made,Tackles Made,410,0,5,335,394,454,1.355
+team,2025,time_in_possession,Time In Possession,410,18.283333333333335,23.833333333333332,27.6,31.233333333333334,37.03333333333333,1.342
+team,2025,total_passes,Total Passes,410,137,205,238,276,324,1.361
+team,2025,tries,Tries,410,0,2,4,7,12,3.000
+team,2026,all_run_metres,All Run Metres,468,12,15,24,1539,2333,97.208
+team,2026,all_runs,All Runs,468,6,16,61,170,238,3.902
+team,2026,bomb_kicks,Bomb Kicks,64,0,0,4,7,16,4.000
+team,2026,conversions,Conversions,64,0,1,3,5,8,2.667
+team,2026,dummy_passes,Dummy Passes,64,6,11,20,37,49,2.450
+team,2026,errors,Errors,64,3,3,9,15,19,2.111
+team,2026,forced_drop_outs,Forced Drop Outs,64,0,0,1,4,6,6.000
+team,2026,grubbers,Grubbers,64,0,1,4,7,408,102.000
+team,2026,ineffective_tackles,Ineffective Tackles,64,0,1,12,19,27,2.250
+team,2026,inside_10_metres,Inside 10 Metres,64,0,0,1,3,8,8.000
+team,2026,interchanges_used,Interchanges Used,64,0,0,1,8,10,10.000
+team,2026,kicking_metres,Kicking Metres,64,280,402,545,800,1018,1.868
+team,2026,kicks,Kicks,64,10,15,19,25,35,1.842
+team,2026,line_breaks,Line Breaks,64,1,2,4,7,13,3.250
+team,2026,missed_tackles,Missed Tackles,64,0,20,36,358,404,11.222
+team,2026,offloads,Offloads,64,2,5,9,15,25,2.778
+team,2026,penalties,Penalties Conceded,64,0,2,5,11,14,2.800
+team,2026,penalty_goals,Penalty Goals,64,0,0,1,2,34,34.000
+team,2026,post_contact_metres,Post Contact Metres,468,3,12,30,483,720,24.000
+team,2026,receipts,Receipts,64,296,352,432.5,490,554,1.281
+team,2026,ruck_infringements,Ruck Infringements,64,0,0,3,5,8,2.667
+team,2026,sin_bins,Sin Bins,58,0,0,1,18,30,30.000
+team,2026,tackle_breaks,Tackle Breaks,64,19,23,33,46,57,1.727
+team,2026,tackles_made,Tackles Made,64,1,4,317,377,441,1.391
+team,2026,time_in_possession,Time In Possession,468,1.6666666666666667,23.933333333333334,44,82,98,2.227
+team,2026,total_passes,Total Passes,64,161,191,235.5,280,319,1.355
+team,2026,tries,Tries,64,0,2,4,7,9,2.250

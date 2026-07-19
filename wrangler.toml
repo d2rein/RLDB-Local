@@ -1,0 +1,13 @@
+name = "rugby-league-stats-database"
+main = "src/server/worker.ts"
+compatibility_date = "2026-04-07"
+vars = { REMOTE_QUERY_ORIGIN = "https://rldb-origin.drein.net" }
+
+[env.local]
+vars = { REMOTE_QUERY_ORIGIN = "" }
+
+[[env.local.d1_databases]]
+binding = "DB"
+database_name = "rl_stats_db"
+database_id = "76dcda76-b8e8-4c5f-924a-24fc15b3b8d3"
+migrations_dir = "migrations"

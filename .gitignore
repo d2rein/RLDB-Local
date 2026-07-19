@@ -1,0 +1,17 @@
+.wrangler/
+node_modules/
+runtime-logs/
+
+seed/*.sql
+seed/core_import_bundle.json
+seed/reference_seed_metadata.json
+
+docs/NRL-Data-main_duplicate/**/__pycache__/
+docs/NRL-Data-main_duplicate/**/*.pyc
+
+*.sqlite
+*.out
+*.err
+*.log
+.tmp-*
+.local-site.*
