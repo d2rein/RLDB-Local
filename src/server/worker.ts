@@ -1,6 +1,10 @@
 import { STAT_DEFINITIONS, STAT_GROUPS } from "./config/stat-definitions.mjs";
+import {
+  handleWithQueryTelemetry,
+  type QueryTelemetryEnv,
+} from "./query-telemetry";
 
-type Env = {
+type Env = QueryTelemetryEnv & {
   DB?: D1Database;
   REMOTE_QUERY_ORIGIN?: string;
   REMOTE_QUERY_TOKEN?: string;
@@ -12295,7 +12299,7 @@ function renderAppShell(): string {
 </html>`;
 }
 
-export default {
+const applicationWorker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const isProxiedPublicBackendRequest = request.headers.get("x-rldb-proxied-by") === "cloudflare-public-site";
@@ -13330,6 +13334,18 @@ export default {
     }
 
     return html("<h1>Not Found</h1>", 404);
+  },
+};
+
+export default {
+  fetch(request: Request, env: Env, context: ExecutionContext): Promise<Response> {
+    return handleWithQueryTelemetry(
+      request,
+      env,
+      context,
+      (instrumentedRequest, instrumentedEnv) =>
+        applicationWorker.fetch(instrumentedRequest, instrumentedEnv as Env)
+    );
   },
 };
 

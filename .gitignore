@@ -15,3 +15,7 @@ docs/NRL-Data-main_duplicate/**/*.pyc
 *.log
 .tmp-*
 .local-site.*
+runtime-data/
+reports/query-performance/
+runtime-logs/telemetry.out.log
+runtime-logs/telemetry.err.log

@@ -11,6 +11,7 @@ $stderrPath = Join-Path $logDir "backend.err.log"
 $launchStatePath = Join-Path $logDir "backend-launch-state.json"
 $localWranglerCli = Join-Path $projectRoot "node_modules\wrangler\bin\wrangler.js"
 $globalWranglerCli = Join-Path $env:APPDATA "npm\node_modules\wrangler\wrangler-dist\cli.js"
+$telemetryScript = Join-Path $projectRoot "scripts\start-query-telemetry-hidden.ps1"
 $startupGraceSeconds = 180
 $mutexName = "Local\RugbyLeagueStatsBackendStarter"
 $createdNew = $false
@@ -28,6 +29,8 @@ if ([string]::IsNullOrWhiteSpace($userToken)) {
 if (-not (Test-Path -LiteralPath $logDir)) {
   New-Item -ItemType Directory -Path $logDir | Out-Null
 }
+
+& $telemetryScript -Port 8798
 
 function Get-ListeningPid([int]$TargetPort) {
   $line = netstat -ano | Select-String -Pattern "127.0.0.1:$TargetPort\s+.*LISTENING\s+(\d+)" | Select-Object -First 1
