@@ -16,7 +16,7 @@ The statistics database is not modified. Records are retained indefinitely.
   `runtime-logs/telemetry.err.log`
 
 The normal hybrid backend starter starts the sidecar first. Telemetry failures
-are asynchronous, bounded to one second, and never replace or alter a query
+are asynchronous, bounded to three seconds, and never replace or alter a query
 response or error.
 
 ## Reports

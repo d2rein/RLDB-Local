@@ -68,7 +68,7 @@ const MAX_SQL_CHARS = 128 * 1024;
 const MAX_PARAMETERS_CHARS = 64 * 1024;
 const MAX_ERROR_CHARS = 16 * 1024;
 const MAX_STATEMENTS = 100;
-const DELIVERY_TIMEOUT_MS = 1000;
+const DELIVERY_TIMEOUT_MS = 3000;
 
 let lastDeliveryWarningAt = 0;
 
