@@ -12,7 +12,7 @@ function git(...args) {
     "git",
     ["-c", `safe.directory=${projectRoot.replaceAll("\\", "/")}`, ...args],
     { cwd: projectRoot, encoding: "utf8" }
-  ).trim();
+  ).trimEnd();
 }
 
 const fullCommit = git("rev-parse", "HEAD");
