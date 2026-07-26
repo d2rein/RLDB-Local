@@ -24,6 +24,20 @@ try {
   # Start or replace only the isolated benchmark listener.
 }
 
+$portNeedle = "--port $Port"
+$stateNeedle = $StateDirectory.ToLowerInvariant()
+$benchmarkParents = Get-CimInstance Win32_Process | Where-Object {
+  $commandLine = ([string]$_.CommandLine).ToLowerInvariant()
+  $_.Name -in @("node.exe", "powershell.exe") -and (
+    ($commandLine.Contains("wrangler") -and $commandLine.Contains($portNeedle)) -or
+    $commandLine.Contains($stateNeedle)
+  )
+}
+foreach ($process in $benchmarkParents) {
+  Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
+}
+if ($benchmarkParents) { Start-Sleep -Seconds 2 }
+
 $listener = netstat -ano | Select-String -Pattern "127.0.0.1:$Port\s+.*LISTENING\s+(\d+)" | Select-Object -First 1
 if ($listener) {
   $match = [regex]::Match($listener.ToString(), "LISTENING\s+(\d+)")

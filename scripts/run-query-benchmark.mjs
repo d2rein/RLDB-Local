@@ -3,7 +3,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { DatabaseSync } from "node:sqlite";
 import { performance } from "node:perf_hooks";
 
@@ -415,9 +415,14 @@ async function ensureBackend(origin) {
 }
 
 function restartBackend(scriptPath) {
-  execFileSync("powershell", [
-    "-ExecutionPolicy", "Bypass", "-File", scriptPath,
-  ], { cwd: root, stdio: "inherit" });
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const result = spawnSync("powershell", [
+      "-ExecutionPolicy", "Bypass", "-File", scriptPath,
+    ], { cwd: root, stdio: "inherit" });
+    if (result.status === 0) return;
+    if (attempt < 2) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2_000);
+  }
+  console.warn("Benchmark restart helper returned a failure; health polling will determine whether recovery succeeded.");
 }
 
 function explainPlans(_telemetryPath, statements) {
