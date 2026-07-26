@@ -426,6 +426,13 @@ export async function handleWithQueryTelemetry(
   }
 
   const totalRequestMs = nowMs() - startedAt;
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.set("x-rldb-request-id", requestId);
+  response = new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: responseHeaders,
+  });
   const markers: string[] = [];
   context.waitUntil((async () => {
     const details = await responseDetails(response);

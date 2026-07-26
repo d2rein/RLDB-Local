@@ -1,0 +1,77 @@
+[
+  {
+    "id": "coverage-nrlw-player-tries-season",
+    "label": "NRLW player tries by season",
+    "category": "competition_nrlw",
+    "endpoint": "leaderboard",
+    "params": {
+      "competition": "NRLW", "seasonFrom": "2018", "seasonTo": "2026",
+      "scope": "player", "statKey": "tries", "mode": "totals", "format": "season",
+      "conditions": "[]", "limit": "50", "includeRegular": "1",
+      "includeFinals": "1", "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
+    }
+  },
+  {
+    "id": "coverage-soo-player-points-overall",
+    "label": "State of Origin player points",
+    "category": "competition_soo",
+    "endpoint": "leaderboard",
+    "params": {
+      "competition": "SOO", "seasonFrom": "1980", "seasonTo": "2026",
+      "scope": "player", "statKey": "points", "mode": "totals", "format": "overall",
+      "conditions": "[]", "limit": "50", "includeRegular": "1",
+      "includeFinals": "1", "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
+    }
+  },
+  {
+    "id": "coverage-nrl-plus-soo-player-tries",
+    "label": "Combined NRL and Origin player tries",
+    "category": "competition_combined",
+    "endpoint": "leaderboard",
+    "params": {
+      "competition": "NRL_PLUS_SOO", "seasonFrom": "1908", "seasonTo": "2026",
+      "scope": "player", "statKey": "tries", "mode": "totals", "format": "overall",
+      "conditions": "[]", "limit": "50", "includeRegular": "1",
+      "includeFinals": "1", "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
+    }
+  },
+  {
+    "id": "coverage-player-multiple-stats",
+    "label": "Player season totals with multiple selected stats",
+    "category": "multiple_stats",
+    "endpoint": "leaderboard",
+    "params": {
+      "competition": "NRL", "seasonFrom": "2020", "seasonTo": "2026",
+      "scope": "player", "statKey": "tries", "mode": "totals", "format": "season",
+      "multiSelectedStats": "[\"tries\",\"try_assists\",\"all_run_metres\"]",
+      "conditions": "[]", "limit": "100", "includeRegular": "1",
+      "includeFinals": "1", "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
+    }
+  },
+  {
+    "id": "coverage-team-season-wins-condition",
+    "label": "Team seasons with more than 14 wins",
+    "category": "conditional_aggregate",
+    "endpoint": "leaderboard",
+    "params": {
+      "competition": "NRL", "seasonFrom": "1908", "seasonTo": "2026",
+      "scope": "team", "statKey": "games", "mode": "totals", "format": "season",
+      "conditions": "[{\"statKey\":\"wins\",\"operator\":\"gt\",\"value\":\"14\",\"joiner\":\"AND\"}]",
+      "limit": "200", "includeRegular": "1", "includeFinals": "1",
+      "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
+    }
+  },
+  {
+    "id": "coverage-team-season-streak-wins-condition",
+    "label": "Consecutive team seasons with more than 14 wins",
+    "category": "expensive_streak",
+    "endpoint": "leaderboard",
+    "params": {
+      "competition": "NRL", "seasonFrom": "1908", "seasonTo": "2026",
+      "scope": "team", "statKey": "games", "mode": "streaks", "format": "season",
+      "conditions": "[{\"statKey\":\"wins\",\"operator\":\"gt\",\"value\":\"14\",\"joiner\":\"AND\"}]",
+      "limit": "200", "includeRegular": "1", "includeFinals": "1",
+      "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
+    }
+  }
+]
