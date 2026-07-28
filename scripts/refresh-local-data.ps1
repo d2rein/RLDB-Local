@@ -58,6 +58,7 @@ Invoke-Step "Building legacy scoring seed SQL" { npm run seed:legacy-sql }
 Invoke-Step "Building player stat aggregate seed SQL" { npm run seed:player-stats-sql }
 Invoke-Step "Building match summary seed SQL" { npm run seed:match-summaries-sql }
 Invoke-Step "Applying local D1 SQLite database" { node .\scripts\apply-local-d1-sqlite.mjs }
+Invoke-Step "Aligning player aggregates with canonical match summaries" { node .\scripts\rebuild-player-stat-aggregates-from-summaries.mjs --operational }
 Invoke-Step "Building current-season refresh SQL" { node .\scripts\build-current-season-refresh-sql.mjs --season=$Season }
 
 Write-Host ""

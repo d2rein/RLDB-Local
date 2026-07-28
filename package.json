@@ -42,6 +42,8 @@
     "seed:legacy-sql": "node ./scripts/build-legacy-scoring-seed-sql.mjs",
     "seed:player-stats-sql": "node ./scripts/build-player-stat-aggregate-seed-sql.mjs",
     "seed:match-summaries-sql": "node ./scripts/build-match-summary-seed-sql.mjs",
+    "db:rebuild:player-aggregates": "node ./scripts/rebuild-player-stat-aggregates-from-summaries.mjs --operational",
+    "db:verify:player-aggregates": "node ./scripts/verify-player-stat-aggregates.mjs",
     "review:legacy-unresolved-scorers": "node ./scripts/export-unresolved-legacy-scorer-review.mjs",
     "review:long-careers": "node ./scripts/audit-long-careers.mjs",
     "review:long-career-splits": "node ./scripts/build-long-career-split-definitions.mjs",
