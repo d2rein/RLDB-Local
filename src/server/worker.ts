@@ -6324,6 +6324,21 @@ async function runLeaderboardQuery(
     const bindValues: unknown[] = [seasonFrom, seasonTo];
     const seasonTypeExpr = buildSeasonTypeExpression("m", filters);
     const scoreHalf = normalizeScoreHalf(filters.scoreHalf);
+    const groupedScoreStatKeys = new Set([
+      "games",
+      "games_included",
+      "wins",
+      "losses",
+      "draws",
+      "points_for",
+      "points_against",
+      "total_points",
+      "margin",
+    ]);
+    const postAggregateConditions = format === "match"
+      ? []
+      : filters.conditions.filter((condition) => groupedScoreStatKeys.has(condition.statKey));
+    const rowConditions = filters.conditions.filter((condition) => !postAggregateConditions.includes(condition));
     const useMatchHistoryQuery =
       scoreHalf === "all" &&
       filters.referee === "Any" &&
@@ -6396,7 +6411,7 @@ async function runLeaderboardQuery(
       if (seasonTypeExpr) {
         clauses.push(buildSeasonTypeExpression("src", filters));
       }
-      const conditionExpr = buildTeamConditionExpression(filters.conditions, scoreHalf, "src", "src");
+      const conditionExpr = buildTeamConditionExpression(rowConditions, scoreHalf, "src", "src");
       if (conditionExpr) {
         clauses.push(conditionExpr.sql);
         bindValues.push(...conditionExpr.binds);
@@ -6606,11 +6621,12 @@ async function runLeaderboardQuery(
         FROM base
         GROUP BY ${grouping.groupBy.join(", ")}
         ORDER BY stat_total DESC, ${grouping.columns[0]} ASC
-        LIMIT ?
+        ${postAggregateConditions.length ? "" : "LIMIT ?"}
       `;
-      bindValues.push(mode, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, limit);
+      bindValues.push(mode, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey);
+      if (!postAggregateConditions.length) bindValues.push(limit);
       const result = await db.prepare(sql).bind(...bindValues).all<QueryRow>();
-      const rows = result.results ?? [];
+      const rows = applyAggregateConditions(result.results ?? [], postAggregateConditions, statKey);
       return {
         ok: true,
         summary: `Top ${limit} teams by ${mode === "averages" ? "average " : ""}${statKey.replace(/_/g, " ")} from ${seasonFrom} to ${seasonTo}${grouping.label !== "overall" ? ` by ${grouping.label}` : ""}.`,
@@ -6684,7 +6700,7 @@ async function runLeaderboardQuery(
     if (seasonTypeExpr) {
       clauses.push(seasonTypeExpr);
     }
-    const conditionExpr = buildTeamConditionExpression(filters.conditions, scoreHalf, "s", "os");
+    const conditionExpr = buildTeamConditionExpression(rowConditions, scoreHalf, "s", "os");
     if (conditionExpr) {
       clauses.push(conditionExpr.sql);
       bindValues.push(...conditionExpr.binds);
@@ -6766,11 +6782,12 @@ async function runLeaderboardQuery(
       FROM base
       GROUP BY ${grouping.groupBy.join(", ")}
       ORDER BY stat_total DESC, ${grouping.columns[0]} ASC
-      LIMIT ?
+      ${postAggregateConditions.length ? "" : "LIMIT ?"}
     `;
-    bindValues.push(mode, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, limit);
+    bindValues.push(mode, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey, statKey);
+    if (!postAggregateConditions.length) bindValues.push(limit);
     const result = await db.prepare(sql).bind(...bindValues).all<QueryRow>();
-    const rows = result.results ?? [];
+    const rows = applyAggregateConditions(result.results ?? [], postAggregateConditions, statKey);
     return {
       ok: true,
       summary: `Top ${limit} teams by ${mode === "averages" ? "average " : ""}${statKey.replace(/_/g, " ")} from ${seasonFrom} to ${seasonTo}${grouping.label !== "overall" ? ` by ${grouping.label}` : ""}${scoreHalf !== "all" && ["points_for", "points_against", "total_points", "margin"].includes(statKey) ? ` using ${scoreHalf}-half scoring` : ""}.`,

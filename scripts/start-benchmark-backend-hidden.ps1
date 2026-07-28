@@ -28,7 +28,8 @@ $portNeedle = "--port $Port"
 $stateNeedle = $StateDirectory.ToLowerInvariant()
 $benchmarkParents = Get-CimInstance Win32_Process | Where-Object {
   $commandLine = ([string]$_.CommandLine).ToLowerInvariant()
-  $_.Name -in @("node.exe", "powershell.exe") -and (
+  $_.ProcessId -ne $PID -and
+  $_.Name -eq "node.exe" -and (
     ($commandLine.Contains("wrangler") -and $commandLine.Contains($portNeedle)) -or
     $commandLine.Contains($stateNeedle)
   )

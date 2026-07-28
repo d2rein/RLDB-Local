@@ -73,5 +73,32 @@
       "limit": "200", "includeRegular": "1", "includeFinals": "1",
       "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
     }
+  },
+  {
+    "id": "correctness-ui-leading-try-scorers",
+    "label": "UI full-results leading try scorers",
+    "category": "full_results_correctness",
+    "endpoint": "full",
+    "params": {
+      "competition": "NRL", "seasonFrom": "1908", "seasonTo": "2026",
+      "scope": "player", "statKey": "tries", "mode": "totals", "format": "overall",
+      "conditions": "[]", "limit": "200", "page": "1", "pageSize": "200",
+      "singleEntityResults": "1", "includeRegular": "1", "includeFinals": "1",
+      "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
+    }
+  },
+  {
+    "id": "correctness-ui-team-season-wins-condition",
+    "label": "UI full-results team seasons with more than 14 wins",
+    "category": "full_results_correctness",
+    "endpoint": "full",
+    "params": {
+      "competition": "NRL", "seasonFrom": "1908", "seasonTo": "2026",
+      "scope": "team", "statKey": "games", "mode": "totals", "format": "season",
+      "conditions": "[{\"statKey\":\"wins\",\"operator\":\"gt\",\"value\":\"14\",\"joiner\":\"AND\"}]",
+      "limit": "200", "page": "1", "pageSize": "200", "singleEntityResults": "0",
+      "includeRegular": "1", "includeFinals": "1",
+      "includeGrandFinal": "1", "excludeSparseHistoricalStreaks": "0"
+    }
   }
 ]
