@@ -86,6 +86,20 @@ function Get-ProjectBackendProcesses([string]$RootPath, [int]$TargetPort) {
   }
 }
 
+function Test-BackendLaunchInProgress([string]$RootPath, [int]$TargetPort) {
+  $rootNeedle = $RootPath.ToLowerInvariant()
+  $portNeedle = "--port $TargetPort"
+  $process = Get-CimInstance Win32_Process | Where-Object {
+    if ($_.Name -ne "node.exe") { return $false }
+    $commandLine = ([string]$_.CommandLine).ToLowerInvariant()
+    return $commandLine.Contains($rootNeedle) `
+      -and $commandLine.Contains("wrangler") `
+      -and $commandLine.Contains(" dev ") `
+      -and $commandLine.Contains($portNeedle)
+  } | Select-Object -First 1
+  return $null -ne $process
+}
+
 function Stop-ProjectBackendProcesses([string]$RootPath, [int]$TargetPort) {
   $currentPid = $PID
   $processes = Get-ProjectBackendProcesses -RootPath $RootPath -TargetPort $TargetPort |
@@ -101,10 +115,16 @@ function Stop-ProjectBackendProcesses([string]$RootPath, [int]$TargetPort) {
   }
 }
 
+$recentLaunchAgeSeconds = Get-RecentLaunchAgeSeconds -StatePath $launchStatePath
 $existingPid = Get-ListeningPid -TargetPort $Port
 if ($null -ne $existingPid) {
   if (Test-BackendHealth -TargetPort $Port) {
     Write-Host "Backend already listening and healthy on port $Port."
+    exit 0
+  }
+
+  if ($null -ne $recentLaunchAgeSeconds -and $recentLaunchAgeSeconds -lt $startupGraceSeconds) {
+    Write-Host "Backend is still within its startup grace period. Leaving process $existingPid running."
     exit 0
   }
 
@@ -113,8 +133,11 @@ if ($null -ne $existingPid) {
   Start-Sleep -Seconds 2
 }
 
-$recentLaunchAgeSeconds = Get-RecentLaunchAgeSeconds -StatePath $launchStatePath
-if ($null -ne $recentLaunchAgeSeconds -and $recentLaunchAgeSeconds -lt $startupGraceSeconds) {
+if (
+  $null -ne $recentLaunchAgeSeconds `
+  -and $recentLaunchAgeSeconds -lt $startupGraceSeconds `
+  -and (Test-BackendLaunchInProgress -RootPath $projectRoot -TargetPort $Port)
+) {
   Write-Host "Recent backend launch detected $recentLaunchAgeSeconds second(s) ago. Waiting before relaunch."
   exit 0
 }

@@ -10,7 +10,6 @@ $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $backendScript = Join-Path $projectRoot "scripts\start-hybrid-backend-hidden.ps1"
 $tunnelScript = Join-Path $projectRoot "scripts\start-cloudflared-tunnel-hidden.ps1"
-$stopScript = Join-Path $projectRoot "scripts\stop-hybrid-backend.ps1"
 $selfScript = Join-Path $projectRoot "scripts\start-hybrid-watchdog-hidden.ps1"
 $mutexName = "Local\RugbyLeagueStatsWatchdog"
 
@@ -47,8 +46,6 @@ while ($true) {
     if (-not (Test-BackendHealth -TargetPort $Port)) {
       $consecutiveHealthFailures += 1
       if ($consecutiveHealthFailures -ge $RestartAfterFailures) {
-        & $stopScript -Port $Port | Out-Null
-        Start-Sleep -Seconds 2
         & $backendScript -Port $Port | Out-Null
         $consecutiveHealthFailures = 0
       } else {
