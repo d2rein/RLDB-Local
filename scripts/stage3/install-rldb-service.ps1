@@ -50,6 +50,18 @@ $releaseRuntimeDirectories = @(
 Write-Host "Installing isolated Stage 3 release $shortCommit."
 New-Item -ItemType Directory -Force -Path $releaseRoot, $dataRoot, $logRoot, $backupRoot, $runtimeRoot, $configRoot, $controlRoot | Out-Null
 
+$existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if ($existingTask -and $existingTask.State -eq "Running") {
+  Write-Host "Stopping the current isolated Stage 3 task before verifying the database..."
+  $existingStopScript = Join-Path $controlRoot "rldb-stop.ps1"
+  if (Test-Path -LiteralPath $existingStopScript) {
+    & $existingStopScript
+    Start-Sleep -Seconds 7
+  }
+  Stop-ScheduledTask -TaskName $TaskName
+  Start-Sleep -Seconds 2
+}
+
 $archivePath = Join-Path $env:TEMP "rldb-stage3-$shortCommit.zip"
 if (Test-Path -LiteralPath $archivePath) {
   Remove-Item -LiteralPath $archivePath -Force
@@ -157,12 +169,6 @@ $settings = New-ScheduledTaskSettingsSet `
   -RestartInterval (New-TimeSpan -Minutes 1) `
   -ExecutionTimeLimit ([timespan]::Zero) `
   -StartWhenAvailable
-$existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-if ($existingTask -and $existingTask.State -eq "Running") {
-  Write-Host "Stopping the current isolated Stage 3 task before updating it..."
-  Stop-ScheduledTask -TaskName $TaskName
-  Start-Sleep -Seconds 2
-}
 Register-ScheduledTask `
   -TaskName $TaskName `
   -Action $action `
