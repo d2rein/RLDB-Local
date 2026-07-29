@@ -77,11 +77,14 @@ $targetDatabase = Join-Path $targetStateDirectory "v3\d1\miniflare-D1DatabaseObj
 if (-not (Test-Path -LiteralPath $targetDatabase)) {
   throw "Copied Stage 3 database was not found: $targetDatabase"
 }
+Write-Host "Verifying source SQLite checksum..."
 $sourceHash = (Get-FileHash -LiteralPath $sourceDatabase.FullName -Algorithm SHA256).Hash
+Write-Host "Verifying retained Stage 3 SQLite checksum..."
 $targetHash = (Get-FileHash -LiteralPath $targetDatabase -Algorithm SHA256).Hash
 if ($sourceHash -ne $targetHash) {
   throw "Stage 3 database checksum mismatch. The task has not been registered."
 }
+Write-Host "SQLite checksum verified. Preparing isolated service configuration..."
 
 $tokenPath = Join-Path $configRoot "backend-token.txt"
 if (-not (Test-Path -LiteralPath $tokenPath)) {
@@ -119,6 +122,7 @@ foreach ($name in @("rldb-status.ps1", "rldb-start.ps1", "rldb-stop.ps1", "rldb-
   Copy-Item -LiteralPath (Join-Path $releaseRoot "scripts\stage3\$name") -Destination $controlRoot -Force
 }
 
+Write-Host "Applying isolated service permissions..."
 & icacls.exe $Root /inheritance:r | Out-Null
 & icacls.exe $Root /grant:r "${primaryUser}:(OI)(CI)F" "${ServiceUser}:(RX)" "SYSTEM:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F" | Out-Null
 & icacls.exe $appBaseRoot /grant:r "${ServiceUser}:(RX)" | Out-Null
@@ -130,6 +134,7 @@ foreach ($path in @($dataRoot, $logRoot, $runtimeRoot)) {
 & icacls.exe $configRoot /grant:r "${ServiceUser}:(OI)(CI)R" | Out-Null
 & icacls.exe $controlRoot /grant:r "${ServiceUser}:(OI)(CI)RX" | Out-Null
 
+Write-Host "Opening the rldbsvc credential prompt to register the Stage 3 task..."
 $credential = Get-Credential -UserName $ServiceUser -Message "Enter the rldbsvc password to register the isolated Stage 3 startup task."
 $password = $credential.GetNetworkCredential().Password
 $action = New-ScheduledTaskAction `
