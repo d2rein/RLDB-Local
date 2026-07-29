@@ -20,6 +20,8 @@ const extraCasesPath = path.join(root, "benchmark", "extra-cases.json");
 const migrationsPath = path.join(root, "benchmark", "migrations", "0001_benchmark_runs.sql");
 const reportDirectory = path.resolve(root, String(args["report-dir"] || "reports/benchmarks"));
 const restartScript = args["restart-script"] ? path.resolve(root, String(args["restart-script"])) : null;
+const requestTimeoutMs = positiveInteger(args["request-timeout-ms"], 300_000);
+const recoveryTimeoutMs = positiveInteger(args["recovery-timeout-ms"], requestTimeoutMs + 30_000);
 const snapshotMetadata = args["snapshot-metadata"]
   ? JSON.parse(await fsp.readFile(path.resolve(root, String(args["snapshot-metadata"])), "utf8"))
   : null;
@@ -71,7 +73,7 @@ const runResult = runInsert.run(
   baseUrl,
   JSON.stringify(machineInfo()),
   process.version,
-  JSON.stringify({ warmIterations, firstObservation: 1, explain, snapshotMetadata }),
+  JSON.stringify({ warmIterations, firstObservation: 1, explain, requestTimeoutMs, recoveryTimeoutMs, snapshotMetadata }),
   path.relative(root, baselinePath).replaceAll("\\", "/"),
 );
 const runId = Number(runResult.lastInsertRowid);
@@ -117,7 +119,7 @@ for (const [caseIndex, benchmarkCase] of cases.entries()) {
       try {
         const response = await fetch(url, {
           headers: { "x-rldb-query-source": "benchmark" },
-          signal: AbortSignal.timeout(Number(args["request-timeout-ms"] || 130_000)),
+          signal: AbortSignal.timeout(requestTimeoutMs),
         });
         responseStatus = response.status;
         requestId = response.headers.get("x-rldb-request-id");
@@ -130,7 +132,7 @@ for (const [caseIndex, benchmarkCase] of cases.entries()) {
         payload = { benchmarkError: errorMessage };
         if (attempt < 2) {
           if (restartScript) restartBackend(restartScript);
-          recoveredAfterFailure = await waitForHealth(baseUrl, 60_000);
+          recoveredAfterFailure = await waitForHealth(baseUrl, recoveryTimeoutMs);
         }
       }
     }

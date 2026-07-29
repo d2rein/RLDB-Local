@@ -19,6 +19,7 @@
     "telemetry:test": "node ./scripts/run-query-telemetry-tests.mjs",
     "benchmark:capture": "node ./scripts/run-query-benchmark.mjs --capture-baseline",
     "benchmark:run": "node ./scripts/run-query-benchmark.mjs",
+    "benchmark:stage3": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stage3\\run-stage3-benchmark.ps1",
     "benchmark:snapshot": "node ./scripts/create-benchmark-snapshot.mjs",
     "local:refresh": "powershell -ExecutionPolicy Bypass -File .\\scripts\\refresh-local-data.ps1",
     "local:refresh:hybrid": "powershell -ExecutionPolicy Bypass -File .\\scripts\\refresh-hybrid-site.ps1",
