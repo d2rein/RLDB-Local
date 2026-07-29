@@ -61,6 +61,54 @@ or placed in an application configuration file.
 Creating the account and registering a task under it require an administrator
 session and its task credentials. Source preparation and benchmarks do not.
 
+## Dedicated Account Installation
+
+The isolated service scripts are under `scripts/stage3`. They install a
+versioned, rollback-friendly release under `C:\RLDB` and never edit or stop the
+operational workspace, port `8797`, production tunnel, or production task.
+
+From an Administrator PowerShell window:
+
+```powershell
+cd C:\Users\d2rei\My_Site\rugby-league-stats-db-live-mirror
+powershell -ExecutionPolicy Bypass -File .\scripts\stage3\install-rldb-service.ps1
+```
+
+The installer:
+
+- exports the current committed Stage 3 revision rather than copying a dirty
+  working tree;
+- installs locked dependencies in a versioned release directory;
+- copies and SHA-256 verifies the frozen Stage 3 database;
+- generates a separate backend token and stores it outside Git;
+- grants `rldbsvc` read-only application/configuration access and write access
+  only to Stage 3 data, logs, and runtime directories;
+- registers `RLDB-Stage3-Parallel` as a limited scheduled task;
+- prompts for the account password only while Windows registers the task.
+
+The password is not written to a project file or log.
+
+The low-resource controller remains alive while Windows is running. It monitors
+only the Stage 3 children, automatically replaces a crashed child, and restarts
+an unhealthy backend after eight consecutive bounded health failures. A slow
+or failed Stage 3 request cannot wedge or restart the operational backend.
+
+The maintenance account controls the service through request files, so normal
+start, stop, restart, status, and log access do not require elevation:
+
+```powershell
+C:\RLDB\control\rldb-status.ps1
+C:\RLDB\control\rldb-start.ps1
+C:\RLDB\control\rldb-stop.ps1
+C:\RLDB\control\rldb-restart.ps1
+C:\RLDB\control\rldb-logs.ps1
+```
+
+`stop` stops the backend and telemetry children but intentionally leaves the
+small controller task alive to receive a future `start` request. The service
+binds only to `127.0.0.1:8899`; no public hostname or router forwarding is
+created by the installer.
+
 ## Benchmark Sequence
 
 1. Copy the same fixed SQLite snapshot into the parallel data directory.
