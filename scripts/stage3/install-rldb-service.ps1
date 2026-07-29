@@ -80,29 +80,41 @@ try {
 }
 New-Item -ItemType Directory -Force -Path $releaseRuntimeDirectories | Out-Null
 
-if (-not (Test-Path -LiteralPath $targetStateDirectory)) {
+$seededStage3State = -not (Test-Path -LiteralPath $targetStateDirectory)
+if ($seededStage3State) {
   Write-Host "Copying the frozen 2.32 GB SQLite state. This can take several minutes."
   Copy-Item -LiteralPath $SnapshotStateDirectory -Destination $targetStateDirectory -Recurse
 } else {
-  Write-Host "Existing Stage 3 database state retained at $targetStateDirectory."
+  Write-Host "Existing Stage 3 database state retained at $targetStateDirectory. It is independently managed after its initial seed."
 }
 
-$sourceDatabase = Get-ChildItem -LiteralPath (Join-Path $SnapshotStateDirectory "v3\d1\miniflare-D1DatabaseObject") -Filter "*.sqlite" -File |
-  Where-Object { $_.Name -ne "metadata.sqlite" } |
-  Sort-Object Length -Descending |
-  Select-Object -First 1
-$targetDatabase = Join-Path $targetStateDirectory "v3\d1\miniflare-D1DatabaseObject\$($sourceDatabase.Name)"
-if (-not (Test-Path -LiteralPath $targetDatabase)) {
-  throw "Copied Stage 3 database was not found: $targetDatabase"
+$targetHash = $null
+if ($seededStage3State) {
+  $sourceDatabase = Get-ChildItem -LiteralPath (Join-Path $SnapshotStateDirectory "v3\d1\miniflare-D1DatabaseObject") -Filter "*.sqlite" -File |
+    Where-Object { $_.Name -ne "metadata.sqlite" } |
+    Sort-Object Length -Descending |
+    Select-Object -First 1
+  $targetDatabase = Join-Path $targetStateDirectory "v3\d1\miniflare-D1DatabaseObject\$($sourceDatabase.Name)"
+  if (-not (Test-Path -LiteralPath $targetDatabase)) {
+    throw "Copied Stage 3 database was not found: $targetDatabase"
+  }
+  Write-Host "Verifying initial Stage 3 SQLite seed checksum..."
+  $sourceHash = (Get-FileHash -LiteralPath $sourceDatabase.FullName -Algorithm SHA256).Hash
+  $targetHash = (Get-FileHash -LiteralPath $targetDatabase -Algorithm SHA256).Hash
+  if ($sourceHash -ne $targetHash) {
+    throw "Initial Stage 3 database checksum mismatch. The task has not been registered."
+  }
+} else {
+  $targetDatabase = Get-ChildItem -LiteralPath (Join-Path $targetStateDirectory "v3\d1\miniflare-D1DatabaseObject") -Filter "*.sqlite" -File |
+    Where-Object { $_.Name -ne "metadata.sqlite" } |
+    Sort-Object Length -Descending |
+    Select-Object -First 1
+  if (-not $targetDatabase) {
+    throw "Retained Stage 3 database was not found."
+  }
+  $targetHash = (Get-FileHash -LiteralPath $targetDatabase.FullName -Algorithm SHA256).Hash
 }
-Write-Host "Verifying source SQLite checksum..."
-$sourceHash = (Get-FileHash -LiteralPath $sourceDatabase.FullName -Algorithm SHA256).Hash
-Write-Host "Verifying retained Stage 3 SQLite checksum..."
-$targetHash = (Get-FileHash -LiteralPath $targetDatabase -Algorithm SHA256).Hash
-if ($sourceHash -ne $targetHash) {
-  throw "Stage 3 database checksum mismatch. The task has not been registered."
-}
-Write-Host "SQLite checksum verified. Preparing isolated service configuration..."
+Write-Host "Stage 3 database is ready. Preparing isolated service configuration..."
 
 $tokenPath = Join-Path $configRoot "backend-token.txt"
 if (-not (Test-Path -LiteralPath $tokenPath)) {
