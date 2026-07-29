@@ -23,6 +23,7 @@ reproducibility rather than claiming a new hosting-performance gain:
 - Development branch: `parallel/stage3-local-2026-07-28`
 - Operational backend: unchanged on `127.0.0.1:8797`
 - Parallel development port: `127.0.0.1:8899`
+- Parallel telemetry port: `127.0.0.1:8890`
 - Parallel test hostname: not configured
 - Production cutover: not approved or attempted
 

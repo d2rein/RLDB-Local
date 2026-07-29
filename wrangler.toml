@@ -4,7 +4,7 @@ compatibility_date = "2026-04-07"
 vars = { REMOTE_QUERY_ORIGIN = "https://rldb-origin.drein.net" }
 
 [env.local]
-vars = { REMOTE_QUERY_ORIGIN = "", TELEMETRY_ENDPOINT = "http://127.0.0.1:8798/events", RUNTIME_MODE = "production" }
+vars = { REMOTE_QUERY_ORIGIN = "", TELEMETRY_ENDPOINT = "http://127.0.0.1:8890/events", RUNTIME_MODE = "parallel-development" }
 
 [[env.local.d1_databases]]
 binding = "DB"
