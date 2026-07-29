@@ -100,15 +100,7 @@ $sourceHash = (Get-FileHash -LiteralPath $sourceDatabase.FullName -Algorithm SHA
 Write-Host "Verifying retained Stage 3 SQLite checksum..."
 $targetHash = (Get-FileHash -LiteralPath $targetDatabase -Algorithm SHA256).Hash
 if ($sourceHash -ne $targetHash) {
-  $backupStateDirectory = Join-Path $backupRoot ("wrangler-state-mismatch-" + [datetime]::UtcNow.ToString("yyyyMMdd-HHmmss"))
-  Write-Host "Stage 3 database checksum mismatch. Backing up the old isolated state to $backupStateDirectory..."
-  Move-Item -LiteralPath $targetStateDirectory -Destination $backupStateDirectory
-  Write-Host "Copying the current frozen Stage 3 SQLite state..."
-  Copy-Item -LiteralPath $SnapshotStateDirectory -Destination $targetStateDirectory -Recurse
-  $targetHash = (Get-FileHash -LiteralPath $targetDatabase -Algorithm SHA256).Hash
-  if ($sourceHash -ne $targetHash) {
-    throw "Replacement Stage 3 database checksum mismatch. The task has not been registered."
-  }
+  throw "Stage 3 database checksum mismatch. The task has not been registered."
 }
 Write-Host "SQLite checksum verified. Preparing isolated service configuration..."
 
