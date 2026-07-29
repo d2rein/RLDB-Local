@@ -85,7 +85,7 @@ if ($seededStage3State) {
   Write-Host "Copying the frozen 2.32 GB SQLite state. This can take several minutes."
   Copy-Item -LiteralPath $SnapshotStateDirectory -Destination $targetStateDirectory -Recurse
 } else {
-  Write-Host "Existing Stage 3 database state retained at $targetStateDirectory. It is independently managed after its initial seed."
+  Write-Host "Existing Stage 3 database state retained at $targetStateDirectory. It is not compared with the initial seed during service updates."
 }
 
 $targetHash = $null
