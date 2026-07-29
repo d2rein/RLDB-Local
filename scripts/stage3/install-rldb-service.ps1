@@ -42,6 +42,10 @@ $configRoot = Join-Path $Root "config"
 $controlRoot = Join-Path $Root "control"
 $targetStateDirectory = Join-Path $dataRoot "wrangler-state"
 $primaryUser = "$env:USERDOMAIN\$env:USERNAME"
+$releaseRuntimeDirectories = @(
+  (Join-Path $releaseRoot ".wrangler"),
+  (Join-Path $releaseRoot "node_modules\.mf")
+)
 
 Write-Host "Installing isolated Stage 3 release $shortCommit."
 New-Item -ItemType Directory -Force -Path $releaseRoot, $dataRoot, $logRoot, $backupRoot, $runtimeRoot, $configRoot, $controlRoot | Out-Null
@@ -62,6 +66,7 @@ try {
 } finally {
   Pop-Location
 }
+New-Item -ItemType Directory -Force -Path $releaseRuntimeDirectories | Out-Null
 
 if (-not (Test-Path -LiteralPath $targetStateDirectory)) {
   Write-Host "Copying the frozen 2.32 GB SQLite state. This can take several minutes."
@@ -132,6 +137,9 @@ foreach ($path in @($dataRoot, $logRoot, $runtimeRoot)) {
 }
 & icacls.exe $backupRoot /grant:r "${ServiceUser}:(OI)(CI)R" | Out-Null
 & icacls.exe $releaseRoot /grant:r "${ServiceUser}:(OI)(CI)RX" | Out-Null
+foreach ($path in $releaseRuntimeDirectories) {
+  & icacls.exe $path /grant:r "${ServiceUser}:(OI)(CI)M" | Out-Null
+}
 & icacls.exe $configRoot /grant:r "${ServiceUser}:(OI)(CI)R" | Out-Null
 & icacls.exe $controlRoot /grant:r "${ServiceUser}:(OI)(CI)RX" | Out-Null
 
@@ -149,6 +157,12 @@ $settings = New-ScheduledTaskSettingsSet `
   -RestartInterval (New-TimeSpan -Minutes 1) `
   -ExecutionTimeLimit ([timespan]::Zero) `
   -StartWhenAvailable
+$existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if ($existingTask -and $existingTask.State -eq "Running") {
+  Write-Host "Stopping the current isolated Stage 3 task before updating it..."
+  Stop-ScheduledTask -TaskName $TaskName
+  Start-Sleep -Seconds 2
+}
 Register-ScheduledTask `
   -TaskName $TaskName `
   -Action $action `
