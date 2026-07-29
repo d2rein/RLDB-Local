@@ -74,6 +74,22 @@ function Test-HttpHealth([int]$Port, [string]$Path) {
   }
 }
 
+function Test-TcpListener([int]$Port) {
+  $client = [System.Net.Sockets.TcpClient]::new()
+  try {
+    $connection = $client.BeginConnect("127.0.0.1", $Port, $null, $null)
+    if (-not $connection.AsyncWaitHandle.WaitOne(2000)) {
+      return $false
+    }
+    $client.EndConnect($connection)
+    return $true
+  } catch {
+    return $false
+  } finally {
+    $client.Dispose()
+  }
+}
+
 function Start-Telemetry {
   if (Test-ProcessAlive $telemetryProcess) { return }
   $timestamp = [datetime]::UtcNow.ToString("yyyyMMdd-HHmmss")
@@ -211,7 +227,10 @@ try {
       Write-ServiceStatus "starting" "Waiting for backend health."
     }
 
-    if (Test-HttpHealth -Port $backendPort -Path "/api/health") {
+    # Wrangler handles requests serially. A long analytical query can queue an
+    # HTTP health request even though the worker process and listening socket
+    # are healthy, so use the local listener for restart decisions.
+    if (Test-ProcessAlive $backendProcess -and (Test-TcpListener -Port $backendPort)) {
       $consecutiveHealthFailures = 0
       Write-ServiceStatus "running"
     } else {
