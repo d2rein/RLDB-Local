@@ -27,6 +27,7 @@ $account = Get-CimInstance Win32_UserAccount -Filter "LocalAccount=True AND Name
 if (-not $account) {
   throw "The local $ServiceUser account does not exist."
 }
+& (Join-Path $PSScriptRoot "grant-rldbsvc-batch-logon.ps1") -ServiceUser $ServiceUser
 
 $commit = (& git -C $SourceRoot rev-parse HEAD).Trim()
 if (-not $commit) { throw "Unable to identify the Stage 3 Git commit." }
