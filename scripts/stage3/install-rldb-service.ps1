@@ -126,7 +126,7 @@ foreach ($name in @("rldb-status.ps1", "rldb-start.ps1", "rldb-stop.ps1", "rldb-
 Write-Host "Applying isolated service permissions..."
 & icacls.exe $Root /inheritance:r | Out-Null
 & icacls.exe $Root /grant:r "${primaryUser}:(OI)(CI)F" "${ServiceUser}:(RX)" "SYSTEM:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F" | Out-Null
-& icacls.exe $appBaseRoot /grant:r "${ServiceUser}:(RX)" | Out-Null
+& icacls.exe $appBaseRoot /grant:r "${ServiceUser}:(OI)(CI)RX" | Out-Null
 foreach ($path in @($dataRoot, $logRoot, $runtimeRoot)) {
   & icacls.exe $path /grant:r "${ServiceUser}:(OI)(CI)M" | Out-Null
 }
