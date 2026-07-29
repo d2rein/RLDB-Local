@@ -56,6 +56,11 @@ There are effectively two related repos/copies involved:
 This shareable mirror exists to avoid pushing the active local-hosted system
 back into that older cloud-first line by accident.
 
+Parallel Stage 3 work is isolated on
+`parallel/stage3-local-2026-07-28`; see
+[`docs/parallel-stage3.md`](docs/parallel-stage3.md). That branch does not
+replace or reconfigure the operational site.
+
 ## Branch Meaning
 
 At the time of writing:
