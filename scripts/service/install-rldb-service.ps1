@@ -55,7 +55,7 @@ if (-not $PreserveServiceAccountPassword) {
     -PasswordNeverExpires $true `
     -UserMayChangePassword $false `
     -AccountNeverExpires `
-    -Description "Restricted unattended account for the local RLDB candidate service."
+    -Description "Restricted account for local RLDB candidate."
   $unattendedPassword = $null
   $securePassword = $null
   Write-Host "Hardened the service account with an unknown random password."
