@@ -3052,6 +3052,25 @@ function teamScoreStatExpression(
   const teamScoreExpr = `${teamAlias}.${scoreColumns.team}`;
   const opponentScoreExpr = `${teamAlias}.${scoreColumns.opponent}`;
 
+  if (statKey === "points_for_first_half") {
+    return teamStoredNumericStatExpr(teamAlias, "points_for_first_half");
+  }
+  if (statKey === "points_against_first_half") {
+    return teamStoredNumericStatExpr(teamAlias, "points_against_first_half");
+  }
+  if (statKey === "margin_first_half") {
+    return teamStoredNumericStatExpr(teamAlias, "margin_first_half");
+  }
+  if (statKey === "points_for_second_half") {
+    return teamStoredNumericStatExpr(teamAlias, "points_for_second_half");
+  }
+  if (statKey === "points_against_second_half") {
+    return teamStoredNumericStatExpr(teamAlias, "points_against_second_half");
+  }
+  if (statKey === "margin_second_half") {
+    return teamStoredNumericStatExpr(teamAlias, "margin_second_half");
+  }
+
   if (statKey === "wins") {
     return `CASE WHEN ${teamScoreExpr} > ${opponentScoreExpr} THEN 1 ELSE 0 END`;
   }
@@ -3549,7 +3568,22 @@ function canUseTeamMatchAggregatePagedPath(
   if (!["totals", "averages"].includes(mode)) return false;
   if (!["overall", "season", "ground", "opposition", "match"].includes(format)) return false;
   if (!allowConditionBypass && filters.conditions.length > 0) return false;
-  const sqlDerivedTeamStats = new Set(["games", "wins", "losses", "draws", "points_for", "points_against", "total_points", "margin"]);
+  const sqlDerivedTeamStats = new Set([
+    "games",
+    "wins",
+    "losses",
+    "draws",
+    "points_for",
+    "points_against",
+    "total_points",
+    "margin",
+    "points_for_first_half",
+    "points_against_first_half",
+    "margin_first_half",
+    "points_for_second_half",
+    "points_against_second_half",
+    "margin_second_half",
+  ]);
   const selectedDefinition = statDefinitions.find((definition) => definition.statKey === selectedStatKey);
   if (selectedDefinition?.isDerived && !sqlDerivedTeamStats.has(selectedStatKey)) return false;
   const sortDefinition = statDefinitions.find((definition) => definition.statKey === sortColumn);
@@ -3576,10 +3610,23 @@ async function runFullResultsTeamMatchAggregatePagedPath(
     return null;
   }
 
-  const scoreDerivedStatKeys = new Set(["wins", "losses", "draws", "points_for", "points_against", "total_points", "margin"]);
+  const scoreDerivedStatKeys = new Set([
+    "wins",
+    "losses",
+    "draws",
+    "points_for",
+    "points_against",
+    "total_points",
+    "margin",
+    "points_for_first_half",
+    "points_against_first_half",
+    "margin_first_half",
+    "points_for_second_half",
+    "points_against_second_half",
+    "margin_second_half",
+  ]);
   if (
     format === "match" &&
-    normalizeScoreHalf(filters.scoreHalf) === "all" &&
     scoreDerivedStatKeys.has(selectedStatKey) &&
     filters.referee === "Any" &&
     filters.groundCondition === "Any" &&
@@ -3664,82 +3711,77 @@ async function runFullResultsTeamMatchAggregatePagedPath(
       "stat_total",
     ].includes(sortColumn) ? sortColumn : "stat_total";
     const safeSortDirection = sortDirection === "asc" ? "ASC" : "DESC";
+    const selectedScoreColumn = (() => {
+      const scoreHalf = normalizeScoreHalf(filters.scoreHalf);
+      if (selectedStatKey === "points_for") {
+        return scoreHalf === "first"
+          ? "points_for_first_half"
+          : scoreHalf === "second"
+            ? "points_for_second_half"
+            : "points_for";
+      }
+      if (selectedStatKey === "points_against") {
+        return scoreHalf === "first"
+          ? "points_against_first_half"
+          : scoreHalf === "second"
+            ? "points_against_second_half"
+            : "points_against";
+      }
+      if (selectedStatKey === "total_points") {
+        return scoreHalf === "first"
+          ? "total_points_first_half"
+          : scoreHalf === "second"
+            ? "total_points_second_half"
+            : "total_points";
+      }
+      if (selectedStatKey === "margin") {
+        return scoreHalf === "first"
+          ? "margin_first_half"
+          : scoreHalf === "second"
+            ? "margin_second_half"
+            : "margin";
+      }
+      return selectedStatKey;
+    })();
     const statTotalExpr = mode === "averages"
-      ? `CASE
-          WHEN ? = 'wins' THEN 1.0 * src.wins
-          WHEN ? = 'losses' THEN 1.0 * src.losses
-          WHEN ? = 'draws' THEN 1.0 * src.draws
-          WHEN ? = 'points_for' THEN 1.0 * src.points_for
-          WHEN ? = 'points_against' THEN 1.0 * src.points_against
-          WHEN ? = 'total_points' THEN 1.0 * src.total_points
-          ELSE 1.0 * src.margin
-        END`
-      : `CASE
-          WHEN ? = 'wins' THEN src.wins
-          WHEN ? = 'losses' THEN src.losses
-          WHEN ? = 'draws' THEN src.draws
-          WHEN ? = 'points_for' THEN src.points_for
-          WHEN ? = 'points_against' THEN src.points_against
-          WHEN ? = 'total_points' THEN src.total_points
-          ELSE src.margin
-        END`;
+      ? `1.0 * src.${quotedIdentifier(selectedScoreColumn)}`
+      : `src.${quotedIdentifier(selectedScoreColumn)}`;
     const sourceSql = `
       SELECT
-        ht.canonical_name AS team,
+        t.canonical_name AS team,
         c.name AS competition_name,
-        m.season,
-        m.match_id,
-        m.round_index,
+        s.season,
+        s.match_id,
+        s.round_index,
         m.round_label AS round_label,
         m.round_label AS round,
         m.is_finals,
-        COALESCE(at.canonical_name, 'Unknown') AS opposition,
+        COALESCE(ot.canonical_name, 'Unknown') AS opposition,
         COALESCE(v.canonical_name, 'Unknown') AS ground,
         COALESCE(m.match_date_local_text, m.match_date_utc) AS match_reference,
         ${matchSortKeySql("m.match_date_utc", "m.match_date_local_text")} AS match_sort_key,
-        1 AS is_home,
+        s.is_home,
         1 AS games,
         1 AS included_games,
-        CASE WHEN m.home_score > m.away_score THEN 1 ELSE 0 END AS wins,
-        CASE WHEN m.home_score < m.away_score THEN 1 ELSE 0 END AS losses,
-        CASE WHEN m.home_score = m.away_score THEN 1 ELSE 0 END AS draws,
-        m.home_score AS points_for,
-        m.away_score AS points_against,
-        (m.home_score + m.away_score) AS total_points,
-        (m.home_score - m.away_score) AS margin
-      FROM matches m
-      JOIN teams ht ON ht.team_id = m.home_team_id
-      JOIN teams at ON at.team_id = m.away_team_id
-      JOIN competitions c ON c.competition_id = m.competition_id
-      LEFT JOIN venues v ON v.venue_id = m.venue_id
-      WHERE ${completedMatchPredicate("m")}
-      UNION ALL
-      SELECT
-        at.canonical_name AS team,
-        c.name AS competition_name,
-        m.season,
-        m.match_id,
-        m.round_index,
-        m.round_label AS round_label,
-        m.round_label AS round,
-        m.is_finals,
-        COALESCE(ht.canonical_name, 'Unknown') AS opposition,
-        COALESCE(v.canonical_name, 'Unknown') AS ground,
-        COALESCE(m.match_date_local_text, m.match_date_utc) AS match_reference,
-        ${matchSortKeySql("m.match_date_utc", "m.match_date_local_text")} AS match_sort_key,
-        0 AS is_home,
-        1 AS games,
-        1 AS included_games,
-        CASE WHEN m.away_score > m.home_score THEN 1 ELSE 0 END AS wins,
-        CASE WHEN m.away_score < m.home_score THEN 1 ELSE 0 END AS losses,
-        CASE WHEN m.away_score = m.home_score THEN 1 ELSE 0 END AS draws,
-        m.away_score AS points_for,
-        m.home_score AS points_against,
-        (m.home_score + m.away_score) AS total_points,
-        (m.away_score - m.home_score) AS margin
-      FROM matches m
-      JOIN teams ht ON ht.team_id = m.home_team_id
-      JOIN teams at ON at.team_id = m.away_team_id
+        CASE WHEN s.team_score > s.opponent_score THEN 1 ELSE 0 END AS wins,
+        CASE WHEN s.team_score < s.opponent_score THEN 1 ELSE 0 END AS losses,
+        CASE WHEN s.team_score = s.opponent_score THEN 1 ELSE 0 END AS draws,
+        s.team_score AS points_for,
+        s.opponent_score AS points_against,
+        (s.team_score + s.opponent_score) AS total_points,
+        (s.team_score - s.opponent_score) AS margin,
+        ${teamStoredNumericStatExpr("s", "points_for_first_half")} AS points_for_first_half,
+        ${teamStoredNumericStatExpr("s", "points_against_first_half")} AS points_against_first_half,
+        (${teamStoredNumericStatExpr("s", "points_for_first_half")} + ${teamStoredNumericStatExpr("s", "points_against_first_half")}) AS total_points_first_half,
+        ${teamStoredNumericStatExpr("s", "margin_first_half")} AS margin_first_half,
+        ${teamStoredNumericStatExpr("s", "points_for_second_half")} AS points_for_second_half,
+        ${teamStoredNumericStatExpr("s", "points_against_second_half")} AS points_against_second_half,
+        (${teamStoredNumericStatExpr("s", "points_for_second_half")} + ${teamStoredNumericStatExpr("s", "points_against_second_half")}) AS total_points_second_half,
+        ${teamStoredNumericStatExpr("s", "margin_second_half")} AS margin_second_half
+      FROM team_match_summary s
+      JOIN matches m ON m.match_id = s.match_id
+      JOIN teams t ON t.team_id = s.team_id
+      LEFT JOIN teams ot ON ot.team_id = s.opponent_team_id
       JOIN competitions c ON c.competition_id = m.competition_id
       LEFT JOIN venues v ON v.venue_id = m.venue_id
       WHERE ${completedMatchPredicate("m")}
@@ -3774,8 +3816,7 @@ async function runFullResultsTeamMatchAggregatePagedPath(
       SELECT COUNT(*) AS count
       FROM filtered
     `;
-    const statKeyBinds = [selectedStatKey, selectedStatKey, selectedStatKey, selectedStatKey, selectedStatKey, selectedStatKey];
-    const rowsResult = await db.prepare(sql).bind(...statKeyBinds, ...matchBinds, pageSize, offset).all<QueryRow>();
+    const rowsResult = await db.prepare(sql).bind(...matchBinds, pageSize, offset).all<QueryRow>();
     const countResult = await db.prepare(countSql).bind(...matchBinds).first<{ count: number }>();
     return {
       ok: true,
@@ -3801,8 +3842,15 @@ async function runFullResultsTeamMatchAggregatePagedPath(
   const rawStatKeys = [...new Set(statDefinitions
     .filter((definition) => !definition.isDerived && definition.statKey !== "games")
     .map((definition) => definition.statKey))];
-  if (!rawStatKeys.length && selectedStatKey !== "games") return null;
-  if (selectedStatKey !== "games" && !rawStatKeys.includes(selectedStatKey)) return null;
+  const selectedScoreExpr = selectedStatKey === "games"
+    ? null
+    : teamScoreStatExpression(selectedStatKey, filters.scoreHalf, "s", "os");
+  if (!rawStatKeys.length && selectedStatKey !== "games" && !selectedScoreExpr) return null;
+  if (
+    selectedStatKey !== "games" &&
+    !rawStatKeys.includes(selectedStatKey) &&
+    !selectedScoreExpr
+  ) return null;
 
   const definitionByStatKey = new Map(statDefinitions.map((definition) => [definition.statKey, definition]));
   const getTeamStatDefinition = (statKey: string) =>
@@ -3862,10 +3910,6 @@ async function runFullResultsTeamMatchAggregatePagedPath(
   const selectedIncludedAlias = selectedStatKey === "games"
     ? null
     : (statIncludedAliases.get(selectedStatKey) ?? quotedIdentifier(`i_${selectedStatKey}`));
-  const selectedScoreExpr = selectedStatKey === "games"
-    ? null
-    : teamScoreStatExpression(selectedStatKey, filters.scoreHalf, "s", "os");
-
   if (selectedStatKey !== "games" && !statValueAliases.has(selectedStatKey)) {
     if (selectedScoreExpr) {
       statValueSelects.push(`${selectedScoreExpr} AS ${selectedValueAlias}`);

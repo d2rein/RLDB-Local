@@ -33,7 +33,29 @@ const insertEvent = database.prepare(`
     response_status, error_name, error_message, application_version,
     database_schema_version, request_source, statement_count, truncation_markers_json
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(request_id) DO UPDATE SET
+    recorded_at_utc = excluded.recorded_at_utc,
+    endpoint = excluded.endpoint,
+    request_input_json = excluded.request_input_json,
+    query_shape_hash = excluded.query_shape_hash,
+    query_category = excluded.query_category,
+    database_execution_ms = excluded.database_execution_ms,
+    application_post_processing_ms = excluded.application_post_processing_ms,
+    total_request_ms = excluded.total_request_ms,
+    rows_fetched = excluded.rows_fetched,
+    database_rows_read = excluded.database_rows_read,
+    rows_returned = excluded.rows_returned,
+    response_status = excluded.response_status,
+    error_name = excluded.error_name,
+    error_message = excluded.error_message,
+    application_version = excluded.application_version,
+    database_schema_version = excluded.database_schema_version,
+    request_source = excluded.request_source,
+    statement_count = excluded.statement_count,
+    truncation_markers_json = excluded.truncation_markers_json
 `);
+const selectEventId = database.prepare("SELECT event_id FROM query_events WHERE request_id = ?");
+const deleteEventStatements = database.prepare("DELETE FROM query_statements WHERE event_id = ?");
 const insertStatement = database.prepare(`
   INSERT INTO query_statements (
     event_id, ordinal, method, sql_text, normalized_sql, parameters_json,
@@ -57,9 +79,10 @@ function effectiveVersion(value, fallback) {
 function insertTelemetryEvent(event) {
   database.exec("BEGIN IMMEDIATE");
   try {
-    const result = insertEvent.run(
+    const requestId = String(event.requestId ?? "");
+    insertEvent.run(
       String(event.recordedAtUtc ?? new Date().toISOString()),
-      String(event.requestId ?? ""),
+      requestId,
       String(event.endpoint ?? ""),
       JSON.stringify(event.requestInput ?? {}),
       String(event.queryShapeHash ?? ""),
@@ -79,7 +102,10 @@ function insertTelemetryEvent(event) {
       Array.isArray(event.statements) ? event.statements.length : 0,
       JSON.stringify(event.truncationMarkers ?? [])
     );
-    const eventId = Number(result.lastInsertRowid);
+    const eventRow = selectEventId.get(requestId);
+    if (!eventRow) throw new Error(`Unable to resolve telemetry event ${requestId} after upsert.`);
+    const eventId = Number(eventRow.event_id);
+    deleteEventStatements.run(eventId);
     for (const statement of event.statements ?? []) {
       insertStatement.run(
         eventId,

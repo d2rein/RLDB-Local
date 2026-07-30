@@ -69,6 +69,7 @@ const MAX_PARAMETERS_CHARS = 64 * 1024;
 const MAX_ERROR_CHARS = 16 * 1024;
 const MAX_STATEMENTS = 100;
 const DELIVERY_TIMEOUT_MS = 3000;
+const START_DELIVERY_TIMEOUT_MS = 150;
 
 let lastDeliveryWarningAt = 0;
 
@@ -335,11 +336,15 @@ function boundedEvent(event: QueryTelemetryEvent): QueryTelemetryEvent {
   return event;
 }
 
-async function deliverTelemetry(env: QueryTelemetryEnv, event: QueryTelemetryEvent): Promise<void> {
+async function deliverTelemetry(
+  env: QueryTelemetryEnv,
+  event: QueryTelemetryEvent,
+  timeoutMs = DELIVERY_TIMEOUT_MS
+): Promise<void> {
   const endpoint = String(env.TELEMETRY_ENDPOINT ?? "").trim();
   if (!endpoint) return;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DELIVERY_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const headers = new Headers({ "content-type": "application/json" });
     if (env.TELEMETRY_TOKEN) headers.set("x-rldb-telemetry-token", env.TELEMETRY_TOKEN);
@@ -386,12 +391,45 @@ export async function handleWithQueryTelemetry(
   };
   const requestId = crypto.randomUUID();
   const startedAt = nowMs();
+  const startMarkers: string[] = [];
+  const startDelivery = (async () => {
+    const shape = {
+      request: structuralRequestShape(url),
+      sql: [],
+    };
+    await deliverTelemetry(env, {
+      recordedAtUtc: new Date().toISOString(),
+      requestId,
+      endpoint: url.pathname,
+      requestInput: sanitizedRequestInput(url, startMarkers),
+      queryShapeHash: await sha256Hex(JSON.stringify(shape)),
+      queryCategory: queryCategory(url),
+      databaseExecutionMs: 0,
+      applicationPostProcessingMs: 0,
+      totalRequestMs: 0,
+      rowsFetched: 0,
+      databaseRowsRead: 0,
+      rowsReturned: null,
+      responseStatus: 102,
+      errorName: null,
+      errorMessage: null,
+      applicationVersion: env.APP_VERSION ?? "unknown",
+      databaseSchemaVersion: env.SCHEMA_VERSION ?? "unknown",
+      requestSource: requestSource(request, env),
+      statements: [],
+      truncationMarkers: startMarkers,
+    }, START_DELIVERY_TIMEOUT_MS);
+  })();
+  // Persist the start marker before a synchronous SQLite query can monopolize
+  // the Worker. Delivery is non-fatal and strictly bounded.
+  await startDelivery;
   let response: Response;
   try {
     response = await handler(request, { ...env, DB: instrumentD1Database(env.DB, collector) });
   } catch (error) {
     const totalRequestMs = nowMs() - startedAt;
     context.waitUntil((async () => {
+      await startDelivery;
       const details = errorDetails(error);
       const markers: string[] = [];
       const shape = {
@@ -435,6 +473,7 @@ export async function handleWithQueryTelemetry(
   });
   const markers: string[] = [];
   context.waitUntil((async () => {
+    await startDelivery;
     const details = await responseDetails(response);
     const shape = {
       request: structuralRequestShape(url),
