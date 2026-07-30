@@ -46,8 +46,8 @@ It returned Alex Johnston with 230 tries and 8,079 grouped players.
 ### Existing persisted season aggregates
 
 The equivalent unfiltered career query was run against the existing
-`player_stat_aggregates` season rows. It returned Alex Johnston with 230 tries
-and 8,083 grouped players.
+`player_stat_aggregates` season rows. The focused timing experiment returned
+Alex Johnston with 230 tries.
 
 | Observation | Duration |
 | --- | ---: |
@@ -81,6 +81,39 @@ aggregates. Fall back to the corrected set-based match-summary route otherwise.
 Run the complete correctness/performance benchmark after this general
 refactor. Running all 35 cases before correcting this known 186-second path
 would be unnecessarily slow and would not provide a useful candidate baseline.
+
+## Implemented candidate optimization
+
+The isolated candidate now applies that recommendation:
+
+- unfiltered player totals and averages in `overall` or `season` format use
+  the existing persisted season aggregates;
+- other player aggregate paths use indexed joins to
+  `player_match_stat_values` instead of correlated scalar subqueries;
+- SQL-paged player paths obtain their total row count in the result query
+  instead of repeating the complete aggregation.
+
+Before enabling the aggregate route, a direct audit confirmed that the
+canonical match-summary and persisted-aggregate routes both contain 8,079 NRL
+players and produce identical all-time try totals for every player.
+
+The operational and candidate databases were also compared directly. They
+have identical normalized schema definitions, 26 tables, 26 indexes, matching
+row counts in all core summary/value/aggregate tables, and the same data
+cutoff.
+
+Focused isolated results after the change:
+
+- leading player tries: Alex Johnston, 230; 3.4 seconds on the first measured
+  request and 0.23 seconds in the smoke run;
+- full-results leading tries: Alex Johnston, 230; 8,079 total rows; 0.61
+  seconds;
+- player tries by match: Frank Burge, 8; approximately 3.5 seconds when warm;
+- first-half team points by match: HTTP 200 in 5.1 seconds.
+
+The first historical match-level request can still be much slower when the
+2.3 GB SQLite file is not cached. This is database I/O rather than application
+post-processing and remains a benchmark/index investigation item.
 
 ## Local reports
 

@@ -12,6 +12,8 @@
     "test": "node --test tests/sqlite-d1.test.mjs",
     "smoke": "node scripts/smoke-test.mjs",
     "parity": "node scripts/functional-parity.mjs",
+    "audit:database": "node scripts/audit-database-parity.mjs",
+    "audit:player-aggregates": "node scripts/audit-player-aggregate-coverage.mjs",
     "telemetry:serve": "node scripts/query-telemetry-server.mjs",
     "telemetry:report": "node scripts/report-query-telemetry.mjs"
   },
