@@ -1,0 +1,30 @@
+node_modules/
+dist/
+coverage/
+
+# Runtime state must live outside the repository.
+data/
+logs/
+runtime/
+telemetry/
+backups/
+reports/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.log
+
+# Local configuration and credentials.
+.env
+.env.*
+!.env.example
+*.token
+*.secret
+
+# Editor and operating-system files.
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
