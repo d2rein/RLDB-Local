@@ -123,6 +123,8 @@ foreach ($writePath in @($paths.Data, $paths.Logs, $paths.Runtime, $paths.Teleme
 & icacls.exe $paths.Config "/inheritance:r" "/grant:r" "SYSTEM:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F" "${ServiceUser}:(OI)(CI)R" | Out-Null
 & icacls.exe $paths.Release "/grant:r" "${ServiceUser}:(OI)(CI)RX" "${ControlUser}:(OI)(CI)R" | Out-Null
 
+& (Join-Path $PSScriptRoot "grant-logon-as-batch-job.ps1") -Account $ServiceUser
+
 $action = New-ScheduledTaskAction `
   -Execute "powershell.exe" `
   -Argument "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$($paths.Service)\run-supervisor.ps1`" -InstallRoot `"$InstallRoot`""
@@ -144,8 +146,9 @@ Register-ScheduledTask `
   -Settings $settings `
   -Principal $taskPrincipal `
   -Description "Isolated direct-Node RLDB candidate. Does not use Wrangler or production ports." `
-  -Force | Out-Null
-Start-ScheduledTask -TaskName $TaskName
+  -Force `
+  -ErrorAction Stop | Out-Null
+Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
 
 Write-Host "Waiting for the candidate service..."
 $healthy = $false

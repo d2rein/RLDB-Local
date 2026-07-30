@@ -25,6 +25,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\service\install-rldb-service.
 The installer does not read, store, or change the `rldbsvc` account password.
 The scheduled task uses Windows S4U, so routine service operation does not
 require entering that password.
+The installer grants `rldbsvc` only the Windows `Log on as a batch job`
+privilege required by that S4U task. It does not make the account an
+administrator or grant access to unrelated files.
 
 The initial database is copied once. Reinstallation retains `C:\RLDB\data` and
 the existing site session secret.
