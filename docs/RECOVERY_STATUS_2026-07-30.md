@@ -73,9 +73,9 @@ The direct-Node candidate is installed independently at `C:\RLDB`:
 - database: `C:\RLDB\data\rldb.sqlite`
 
 An elevated ownership audit confirmed the supervisor, backend, and telemetry
-processes are all owned by `rldbsvc`. The normal account can use the narrowly
-scoped control scripts in `C:\RLDB\control` but cannot inspect the task or
-restricted data directly.
+processes are all owned by `rldbsvc`. The primary account can use the narrowly
+scoped control scripts in `C:\RLDB\control` and has read-only data access.
+The service account cannot access unrelated personal or development files.
 
 A candidate-only restart stopped and recreated both child processes, restored
 health in under ten seconds, and left operational port `8797` healthy.
