@@ -16,6 +16,18 @@ $principal = [Security.Principal.WindowsPrincipal]::new($identity)
 if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
   throw "Run this installer from an elevated PowerShell window."
 }
+
+function New-CryptographicRandomBytes([int]$Length) {
+  $bytes = New-Object byte[] $Length
+  $generator = [Security.Cryptography.RandomNumberGenerator]::Create()
+  try {
+    $generator.GetBytes($bytes)
+  } finally {
+    $generator.Dispose()
+  }
+  return $bytes
+}
+
 if ($BackendPort -in @(8797, 8798) -or $TelemetryPort -in @(8797, 8798)) {
   throw "The candidate cannot use operational ports 8797 or 8798."
 }
@@ -34,8 +46,7 @@ if ($production.StatusCode -ne 200) {
 }
 
 if (-not $PreserveServiceAccountPassword) {
-  $passwordBytes = [byte[]]::new(48)
-  [Security.Cryptography.RandomNumberGenerator]::Fill($passwordBytes)
+  $passwordBytes = New-CryptographicRandomBytes 48
   $unattendedPassword = [Convert]::ToBase64String($passwordBytes)
   $securePassword = ConvertTo-SecureString $unattendedPassword -AsPlainText -Force
   Set-LocalUser `
@@ -94,8 +105,7 @@ $existingConfig = if (Test-Path -LiteralPath $existingConfigPath) {
 }
 $sessionSecret = [string]$existingConfig.siteSessionSecret
 if (-not $sessionSecret) {
-  $sessionSecretBytes = [byte[]]::new(48)
-  [Security.Cryptography.RandomNumberGenerator]::Fill($sessionSecretBytes)
+  $sessionSecretBytes = New-CryptographicRandomBytes 48
   $sessionSecret = [Convert]::ToBase64String($sessionSecretBytes)
 }
 $serviceConfig = [ordered]@{
