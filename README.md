@@ -43,6 +43,10 @@ verification results.
 See [docs/SERVICE_RUNBOOK.md](docs/SERVICE_RUNBOOK.md) for restricted-account
 installation, routine controls, permissions, and removal.
 
+See
+[docs/PERFORMANCE_BASELINE_2026-07-31.md](docs/PERFORMANCE_BASELINE_2026-07-31.md)
+for the first installed-candidate query diagnosis and focused benchmark.
+
 ## Repository rules
 
 Only source code, tests, schema definitions, updater logic, service controls,
