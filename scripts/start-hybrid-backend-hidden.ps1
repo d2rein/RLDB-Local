@@ -78,11 +78,11 @@ function Get-ProjectBackendProcesses([string]$RootPath, [int]$TargetPort) {
     $exe = [string]$_.ExecutablePath
     $cmdLower = $cmd.ToLowerInvariant()
     $exeLower = $exe.ToLowerInvariant()
+    # Only manage processes launched for this project and port. The machine can
+    # run an isolated Stage 3 worker whose workerd/esbuild paths are shared.
     return $cmdLower.Contains($rootNeedle) `
       -or $exeLower.Contains($rootNeedle) `
-      -or $cmdLower.Contains("wrangler.js dev --env local --local --ip 127.0.0.1 --port $TargetPort") `
-      -or $exeLower.Contains("\@cloudflare\workerd-windows-64\bin\workerd.exe") `
-      -or $exeLower.Contains("\@esbuild\win32-x64\esbuild.exe")
+      -or $cmdLower.Contains("wrangler.js dev --env local --local --ip 127.0.0.1 --port $TargetPort")
   }
 }
 
