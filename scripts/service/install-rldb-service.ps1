@@ -6,8 +6,7 @@ param(
   [string]$ControlUser = "$env:COMPUTERNAME\d2rei",
   [string]$TaskName = "RLDB-Direct-Node-Supervisor",
   [int]$BackendPort = 8899,
-  [int]$TelemetryPort = 8890,
-  [switch]$PreserveServiceAccountPassword
+  [int]$TelemetryPort = 8890
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,22 +44,6 @@ if ($production.StatusCode -ne 200) {
   throw "Operational health check failed before installation."
 }
 
-if (-not $PreserveServiceAccountPassword) {
-  $passwordBytes = New-CryptographicRandomBytes 48
-  $unattendedPassword = [Convert]::ToBase64String($passwordBytes)
-  $securePassword = ConvertTo-SecureString $unattendedPassword -AsPlainText -Force
-  Set-LocalUser `
-    -Name $serviceAccountName `
-    -Password $securePassword `
-    -PasswordNeverExpires $true `
-    -UserMayChangePassword $false `
-    -AccountNeverExpires `
-    -Description "Restricted account for local RLDB candidate."
-  $unattendedPassword = $null
-  $securePassword = $null
-  Write-Host "Hardened the service account with an unknown random password."
-}
-
 $gitCommit = (& git -c "safe.directory=$SourceRoot" -C $SourceRoot rev-parse HEAD).Trim()
 if (-not $gitCommit) { throw "Unable to determine candidate Git commit." }
 $gitDirty = [bool](& git -c "safe.directory=$SourceRoot" -C $SourceRoot status --porcelain)
@@ -79,10 +62,14 @@ $paths = @{
   Config = Join-Path $InstallRoot "config"
   Service = Join-Path $InstallRoot "service"
 }
-New-Item -ItemType Directory -Force -Path $paths.Values | Out-Null
+foreach ($directoryPath in $paths.Values) {
+  New-Item -ItemType Directory -Force -Path ([string]$directoryPath) | Out-Null
+}
 
 Write-Host "Installing release $gitCommit..."
-New-Item -ItemType Directory -Force -Path (Join-Path $releaseRoot "dist"), (Join-Path $releaseRoot "scripts"), (Join-Path $releaseRoot "migrations\telemetry") | Out-Null
+foreach ($releaseDirectory in @("dist", "scripts", "migrations\telemetry")) {
+  New-Item -ItemType Directory -Force -Path (Join-Path $releaseRoot $releaseDirectory) | Out-Null
+}
 Copy-Item -LiteralPath (Join-Path $SourceRoot "dist\server.mjs") -Destination (Join-Path $releaseRoot "dist\server.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\query-telemetry-server.mjs") -Destination (Join-Path $releaseRoot "scripts\query-telemetry-server.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\report-query-telemetry.mjs") -Destination (Join-Path $releaseRoot "scripts\report-query-telemetry.mjs") -Force

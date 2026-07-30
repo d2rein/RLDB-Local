@@ -22,11 +22,9 @@ cd C:\Users\d2rei\My_Site\rldb-direct-node
 powershell -ExecutionPolicy Bypass -File .\scripts\service\install-rldb-service.ps1
 ```
 
-By default, the installer replaces the known service-account password with an
-unknown random password and marks it non-expiring. The task uses Windows S4U,
-so no password is stored in the task. Use
-`-PreserveServiceAccountPassword` only when there is a deliberate reason to
-retain the account's current password.
+The installer does not read, store, or change the `rldbsvc` account password.
+The scheduled task uses Windows S4U, so routine service operation does not
+require entering that password.
 
 The initial database is copied once. Reinstallation retains `C:\RLDB\data` and
 the existing site session secret.
