@@ -57,10 +57,37 @@ not indicate a candidate failure.
 
 - no benchmark has been started against the candidate
 - no Cloudflare Tunnel test hostname has been assigned
-- no service has been installed under `rldbsvc`
-- no automatic startup or crash recovery has been configured
+- no independent weekly updater has been configured
 - no production route has been changed
 
-The next safe step is to install this verified source as a separate restricted
-account service and expose it only on a separate test route. Production remains
-the rollback system throughout testing.
+## Restricted service installed - 2026-07-31
+
+The direct-Node candidate is installed independently at `C:\RLDB`:
+
+- task: `RLDB-Direct-Node-Supervisor`
+- task state: running
+- task account: `DESKTOP-ASRAPT8\rldbsvc`
+- logon type: Windows Task Scheduler protected password credential
+- run level: limited
+- installed release: `2ac17c09a010321ab174734b1963300f0d6026b5-clean`
+- database: `C:\RLDB\data\rldb.sqlite`
+
+An elevated ownership audit confirmed the supervisor, backend, and telemetry
+processes are all owned by `rldbsvc`. The normal account can use the narrowly
+scoped control scripts in `C:\RLDB\control` but cannot inspect the task or
+restricted data directly.
+
+A candidate-only restart stopped and recreated both child processes, restored
+health in under ten seconds, and left operational port `8797` healthy.
+Representative installed-service checks passed for bootstrap, player profile,
+season index, player match tries, and first-half team points.
+
+The complete smoke runner exceeded its outer three-minute limit on the
+all-time leading-tries path. The candidate remained alive but its synchronous
+SQLite request blocked queued HTTP health checks until the candidate-only
+restart. This is a benchmark/performance finding, not a production incident,
+and must be measured before any cutover.
+
+The next safe steps are to benchmark the installed candidate, implement its
+independent weekly updater, and expose it only through a separate test route.
+Production remains the rollback system throughout testing.

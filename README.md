@@ -9,17 +9,23 @@ public transport and will proxy to a server bound to `127.0.0.1`.
 
 ## Current status
 
-The isolated development candidate is functional. It runs the existing RLDB
-application directly on Node.js and an independent SQLite database:
+The isolated candidate is functional and installed as a restricted Windows
+scheduled task. It runs the existing RLDB application directly on Node.js and
+an independent SQLite database:
 
 - candidate backend: `127.0.0.1:8899`
 - candidate telemetry: `127.0.0.1:8890`
-- runtime directory: `C:\Users\d2rei\My_Site\rldb-direct-node-runtime`
+- install root: `C:\RLDB`
+- scheduled task: `RLDB-Direct-Node-Supervisor`
+- Windows account: `DESKTOP-ASRAPT8\rldbsvc`
 
-The candidate passes its D1-compatibility unit tests and endpoint smoke suite.
-It does not serve production traffic, start automatically, or modify the
-operational database. It currently runs under the development account and is
-not yet installed under the restricted `rldbsvc` account.
+The task starts automatically, and its supervisor restarts the backend and
+telemetry children after a crash. The candidate passes its D1-compatibility
+unit tests and representative endpoint checks. It does not serve production
+traffic or modify the operational database.
+
+The candidate still requires full benchmarking, a separate test tunnel, and an
+independent weekly updater before it can be considered for production cutover.
 
 The operational system remains:
 
@@ -31,7 +37,8 @@ The operational system remains:
 Do not change those routes or processes while developing this replacement.
 
 See [docs/RECOVERY_STATUS_2026-07-30.md](docs/RECOVERY_STATUS_2026-07-30.md)
-for the recovered implementation state and verification results.
+for the recovered implementation state and subsequent service-install
+verification results.
 
 See [docs/SERVICE_RUNBOOK.md](docs/SERVICE_RUNBOOK.md) for restricted-account
 installation, routine controls, permissions, and removal.
