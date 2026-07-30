@@ -28,6 +28,8 @@ if (!fs.existsSync(desiredStatePath)) {
 
 const children = new Map();
 let shuttingDown = false;
+let reconcileInFlight = false;
+let statusWriteSequence = 0;
 let restartToken = await readText(restartRequestPath);
 
 const services = [
@@ -62,9 +64,24 @@ const services = [
 
 log("supervisor_started", { pid: process.pid, configPath });
 
-const monitor = setInterval(() => void reconcile(), 2000);
+const monitor = setInterval(() => void scheduleReconcile(), 2000);
 monitor.unref();
-await reconcile();
+await scheduleReconcile();
+
+async function scheduleReconcile() {
+  if (shuttingDown || reconcileInFlight) return;
+  reconcileInFlight = true;
+  try {
+    await reconcile();
+  } catch (error) {
+    log("reconcile_failed", {
+      name: error instanceof Error ? error.name : "Error",
+      message: error instanceof Error ? error.message : String(error),
+    });
+  } finally {
+    reconcileInFlight = false;
+  }
+}
 
 async function reconcile() {
   if (shuttingDown) return;
@@ -169,9 +186,14 @@ async function writeStatus(desiredState) {
       })
     ),
   };
-  const temporaryPath = `${statusPath}.tmp`;
-  await fsp.writeFile(temporaryPath, JSON.stringify(status, null, 2), "utf8");
-  await fsp.rename(temporaryPath, statusPath);
+  statusWriteSequence += 1;
+  const temporaryPath = `${statusPath}.${process.pid}.${statusWriteSequence}.tmp`;
+  try {
+    await fsp.writeFile(temporaryPath, JSON.stringify(status, null, 2), "utf8");
+    await fsp.rename(temporaryPath, statusPath);
+  } finally {
+    await fsp.rm(temporaryPath, { force: true }).catch(() => {});
+  }
 }
 
 async function readText(filePath) {
