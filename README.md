@@ -33,6 +33,9 @@ Do not change those routes or processes while developing this replacement.
 See [docs/RECOVERY_STATUS_2026-07-30.md](docs/RECOVERY_STATUS_2026-07-30.md)
 for the recovered implementation state and verification results.
 
+See [docs/SERVICE_RUNBOOK.md](docs/SERVICE_RUNBOOK.md) for restricted-account
+installation, routine controls, permissions, and removal.
+
 ## Repository rules
 
 Only source code, tests, schema definitions, updater logic, service controls,
