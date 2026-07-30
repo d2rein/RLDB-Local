@@ -4130,7 +4130,7 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
     ...playerFilters.binds,
   ];
 
-  const aggregateSql = `
+  const baseSql = `
     WITH base AS (
       SELECT
         COALESCE(p.display_name, s.player_name_raw) AS player,
@@ -4151,7 +4151,63 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
       LEFT JOIN venues v ON v.venue_id = m.venue_id
       WHERE s.season BETWEEN ? AND ?
       ${playerFilters.sql}
-    ),
+    )
+  `;
+
+  if (format === "match") {
+    const selectedDirectValueExpr = selectedStatKey === "games_played" ? "1" : selectedValueAlias;
+    const selectedDirectIncludedExpr = selectedStatKey === "games_played" ? "1" : selectedIncludedAlias;
+    const directStatSelects = rawStatKeys.map((rawStatKey) =>
+      `${statValueAliases.get(rawStatKey)} AS ${quotedIdentifier(rawStatKey)}`
+    );
+    const safeDirectSortColumn = safePlayerMatchSortColumn(
+      sortColumn,
+      groupingColumnsList,
+      rawStatKeys
+    );
+    const safeSortDirection = sortDirection === "asc" ? "ASC" : "DESC";
+    const sql = `
+      ${baseSql}
+      SELECT
+        player,
+        season,
+        round_label AS round,
+        opposition_name AS opposition,
+        venue_name AS ground,
+        match_reference,
+        match_sort_key,
+        match_id,
+        ${selectedDirectValueExpr} AS stat_total,
+        1 AS games,
+        ${selectedDirectIncludedExpr} AS included_games,
+        season AS first_season,
+        season AS last_season${directStatSelects.length ? `,
+        ${directStatSelects.join(",\n        ")}` : ""}
+      FROM base
+      ORDER BY ${quotedIdentifier(safeDirectSortColumn)} ${safeSortDirection}, player ASC
+      LIMIT ? OFFSET ?
+    `;
+    const countSql = `
+      ${baseSql}
+      SELECT COUNT(*) AS count
+      FROM base
+    `;
+    const rowsResult = await db.prepare(sql).bind(...bindValues, pageSize, offset).all<QueryRow>();
+    const countResult = await db.prepare(countSql).bind(...bindValues).first<{ count: number }>();
+    const rows = (rowsResult.results ?? []).map((row) => ({
+      ...row,
+      games_played: row.games,
+    }));
+    return {
+      ok: true,
+      summary: `Loaded ${rows.length} player match rows directly from canonical match summaries with SQL paging.`,
+      rows,
+      totalRows: Number(countResult?.count ?? 0),
+    };
+  }
+
+  const aggregateSql = `
+    ${baseSql},
     aggregated AS (
       SELECT
         ${groupSelect},
@@ -4214,6 +4270,24 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
     rows,
     totalRows: Number(countResult?.count ?? 0),
   };
+}
+
+function safePlayerMatchSortColumn(
+  sortColumn: string,
+  groupingColumns: string[],
+  rawStatKeys: string[]
+): string {
+  const normalized = sortColumn === "games_played" ? "games" : sortColumn;
+  return [
+    ...groupingColumns,
+    "match_id",
+    "stat_total",
+    "games",
+    "included_games",
+    "first_season",
+    "last_season",
+    ...rawStatKeys,
+  ].includes(normalized) ? normalized : "stat_total";
 }
 
 function canUseTeamJsonAggregateFastPath(filters: QueryFilters, mode: string, format: string, statKey: string): boolean {
