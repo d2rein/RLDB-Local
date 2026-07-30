@@ -1,0 +1,21 @@
+{
+  "name": "rldb-direct-node",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "node dist/server.mjs",
+    "test": "node --test tests/sqlite-d1.test.mjs",
+    "smoke": "node scripts/smoke-test.mjs",
+    "parity": "node scripts/functional-parity.mjs",
+    "telemetry:serve": "node scripts/query-telemetry-server.mjs",
+    "telemetry:report": "node scripts/report-query-telemetry.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.8"
+  }
+}

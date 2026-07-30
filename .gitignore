@@ -3,12 +3,12 @@ dist/
 coverage/
 
 # Runtime state must live outside the repository.
-data/
-logs/
-runtime/
-telemetry/
-backups/
-reports/
+/data/
+/logs/
+/runtime/
+/telemetry/
+/backups/
+/reports/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
@@ -27,4 +27,3 @@ reports/
 Thumbs.db
 .vscode/
 .idea/
-

@@ -9,8 +9,17 @@ public transport and will proxy to a server bound to `127.0.0.1`.
 
 ## Current status
 
-Foundation only. Nothing in this repository currently serves production
-traffic, starts automatically, or modifies the operational database.
+The isolated development candidate is functional. It runs the existing RLDB
+application directly on Node.js and an independent SQLite database:
+
+- candidate backend: `127.0.0.1:8899`
+- candidate telemetry: `127.0.0.1:8890`
+- runtime directory: `C:\Users\d2rei\My_Site\rldb-direct-node-runtime`
+
+The candidate passes its D1-compatibility unit tests and endpoint smoke suite.
+It does not serve production traffic, start automatically, or modify the
+operational database. It currently runs under the development account and is
+not yet installed under the restricted `rldbsvc` account.
 
 The operational system remains:
 
@@ -21,6 +30,9 @@ The operational system remains:
 
 Do not change those routes or processes while developing this replacement.
 
+See [docs/RECOVERY_STATUS_2026-07-30.md](docs/RECOVERY_STATUS_2026-07-30.md)
+for the recovered implementation state and verification results.
+
 ## Repository rules
 
 Only source code, tests, schema definitions, updater logic, service controls,
@@ -30,4 +42,3 @@ state, and credentials must remain outside Git.
 
 See [docs/MIGRATION_PLAN.md](docs/MIGRATION_PLAN.md) for the staged build and
 cutover guardrails.
-
