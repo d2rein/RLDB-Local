@@ -137,17 +137,36 @@ $settings = New-ScheduledTaskSettingsSet `
   -MultipleInstances IgnoreNew `
   -RestartCount 999 `
   -RestartInterval (New-TimeSpan -Minutes 1)
-$taskPrincipal = New-ScheduledTaskPrincipal -UserId $ServiceUser -LogonType S4U -RunLevel Limited
+$existingTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if (-not $existingTask) {
+  Write-Host "Windows requires the existing $ServiceUser password once to register the task."
+  $credential = Get-Credential `
+    -UserName $ServiceUser `
+    -Message "Enter the existing password for the restricted RLDB service account."
+  if (-not $credential) {
+    throw "Task registration was cancelled."
+  }
 
-Register-ScheduledTask `
-  -TaskName $TaskName `
-  -Action $action `
-  -Trigger $trigger `
-  -Settings $settings `
-  -Principal $taskPrincipal `
-  -Description "Isolated direct-Node RLDB candidate. Does not use Wrangler or production ports." `
-  -Force `
-  -ErrorAction Stop | Out-Null
+  $taskPassword = $credential.GetNetworkCredential().Password
+  try {
+    Register-ScheduledTask `
+      -TaskName $TaskName `
+      -Action $action `
+      -Trigger $trigger `
+      -Settings $settings `
+      -User $ServiceUser `
+      -Password $taskPassword `
+      -RunLevel Limited `
+      -Description "Isolated direct-Node RLDB candidate. Does not use Wrangler or production ports." `
+      -Force `
+      -ErrorAction Stop | Out-Null
+  } finally {
+    $taskPassword = $null
+    $credential = $null
+  }
+} else {
+  Write-Host "Retaining existing scheduled-task credentials."
+}
 Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
 
 Write-Host "Waiting for the candidate service..."

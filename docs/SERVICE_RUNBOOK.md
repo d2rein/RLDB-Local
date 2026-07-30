@@ -22,9 +22,12 @@ cd C:\Users\d2rei\My_Site\rldb-direct-node
 powershell -ExecutionPolicy Bypass -File .\scripts\service\install-rldb-service.ps1
 ```
 
-The installer does not read, store, or change the `rldbsvc` account password.
-The scheduled task uses Windows S4U, so routine service operation does not
-require entering that password.
+The installer does not store or change the `rldbsvc` account password. On the
+first installation, Windows prompts once for the existing password and stores
+the task credential in Task Scheduler's protected credential store. The
+password is not written to source, configuration, logs, or command arguments.
+Reinstallation retains the existing task credential, and routine service
+operation does not require entering the password.
 The installer grants `rldbsvc` only the Windows `Log on as a batch job`
 privilege required by that S4U task. It does not make the account an
 administrator or grant access to unrelated files.
