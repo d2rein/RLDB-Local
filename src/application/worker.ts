@@ -3342,10 +3342,15 @@ async function runPlayerAggregateFastPath(
   `;
   const result = await db.prepare(sql).bind(...binds, ...playerFilterBinds, limit).all<QueryRow>();
   const grouping = groupingColumns("player", format);
-  const rows = (result.results ?? []).map((row) => ({
-    ...row,
-    games_played: row.games,
-  }));
+  const selectedDefinition = getStatDefinition("player", statKey);
+  const rows = (result.results ?? []).map((row) => {
+    const hydrated: QueryRow = { ...row };
+    if (!selectedDefinition?.isDerived) {
+      hydrated.games_played = row.games;
+      hydrated[statKey] = row.stat_total;
+    }
+    return hydrated;
+  });
   return {
     ok: true,
     summary: `Top ${limit} players by ${mode === "averages" ? "average " : ""}${statKey.replace(/_/g, " ")} from ${seasonFrom} to ${seasonTo}${grouping.label !== "overall" ? ` by ${grouping.label}` : ""}. Used precomputed season aggregates.`,
