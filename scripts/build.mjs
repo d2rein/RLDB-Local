@@ -9,8 +9,12 @@ await fs.rm(outputDirectory, { recursive: true, force: true });
 await fs.mkdir(outputDirectory, { recursive: true });
 
 await build({
-  entryPoints: [path.join(root, "src", "node", "server.ts")],
-  outfile: path.join(outputDirectory, "server.mjs"),
+  entryPoints: {
+    server: path.join(root, "src", "node", "server.ts"),
+    "request-worker": path.join(root, "src", "node", "request-worker.ts"),
+  },
+  outdir: outputDirectory,
+  outExtension: { ".js": ".mjs" },
   bundle: true,
   format: "esm",
   platform: "node",

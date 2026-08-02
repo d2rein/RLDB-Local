@@ -1,8 +1,7 @@
 import http from "node:http";
 import path from "node:path";
+import { Worker } from "node:worker_threads";
 import { fileURLToPath } from "node:url";
-import applicationWorker from "../application/worker";
-import { SqliteD1Database } from "./sqlite-d1.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const host = process.env.RLDB_HOST || "127.0.0.1";
@@ -19,10 +18,7 @@ if (port === 8797 || port === 8798) {
   throw new Error(`Port ${port} is reserved for the operational RLDB service.`);
 }
 
-const database = new SqliteD1Database(databasePath);
-const pendingBackgroundTasks = new Set<Promise<unknown>>();
 const environment = {
-  DB: database,
   REMOTE_QUERY_ORIGIN: "",
   LOCAL_API_TOKEN: process.env.LOCAL_API_TOKEN || "",
   STATS_SITE_PASSWORD_HASH: process.env.STATS_SITE_PASSWORD_HASH || "",
@@ -34,28 +30,62 @@ const environment = {
   RUNTIME_MODE: process.env.RLDB_RUNTIME_MODE || "development",
 };
 
-const executionContext = {
-  waitUntil(task: Promise<unknown>) {
-    const settled = Promise.resolve(task).finally(() => pendingBackgroundTasks.delete(settled));
-    pendingBackgroundTasks.add(settled);
-  },
-  passThroughOnException() {},
+type SerializedRequest = {
+  id: number;
+  url: string;
+  method: string;
+  headers: [string, string][];
+  body?: Uint8Array;
 };
 
+type SerializedResponse = {
+  id: number;
+  status: number;
+  statusText: string;
+  headers: [string, string][];
+  body: Uint8Array;
+};
+
+type QueuedRequest = {
+  request: SerializedRequest;
+  outgoing: http.ServerResponse;
+};
+
+let queryWorker: Worker | null = null;
+let workerReady = false;
+let nextRequestId = 1;
+let activeRequest: QueuedRequest | null = null;
+const requestQueue: QueuedRequest[] = [];
+let shuttingDown = false;
+
+startQueryWorker();
+
 const server = http.createServer(async (incoming, outgoing) => {
+  const requestUrl = new URL(incoming.url || "/", `http://${incoming.headers.host || `${host}:${port}`}`);
+  if (requestUrl.pathname === "/api/health") {
+    writeHealthResponse(outgoing);
+    return;
+  }
+
   try {
-    const request = await toFetchRequest(incoming);
-    const response = await applicationWorker.fetch(request, environment, executionContext);
-    await writeFetchResponse(outgoing, response);
+    const request = await serializeRequest(incoming, requestUrl);
+    const queued = { request, outgoing };
+    requestQueue.push(queued);
+
+    const cancel = () => {
+      if (outgoing.writableEnded) return;
+      if (activeRequest === queued) {
+        restartQueryWorker("client_disconnected");
+      } else {
+        const index = requestQueue.indexOf(queued);
+        if (index >= 0) requestQueue.splice(index, 1);
+      }
+    };
+    incoming.once("aborted", cancel);
+    outgoing.once("close", cancel);
+    dispatchNext();
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (!outgoing.headersSent) {
-      outgoing.writeHead(message === "Request body is too large." ? 413 : 500, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store",
-      });
-    }
-    outgoing.end(JSON.stringify({ ok: false, error: message }));
+    writeError(outgoing, error);
   }
 });
 
@@ -74,9 +104,10 @@ server.listen(port, host, () => {
   }));
 });
 
-async function toFetchRequest(incoming: http.IncomingMessage): Promise<Request> {
-  const authority = incoming.headers.host || `${host}:${port}`;
-  const requestUrl = new URL(incoming.url || "/", `http://${authority}`);
+async function serializeRequest(
+  incoming: http.IncomingMessage,
+  requestUrl: URL
+): Promise<SerializedRequest> {
   const headers = new Headers();
   for (const [name, value] of Object.entries(incoming.headers)) {
     if (Array.isArray(value)) {
@@ -89,7 +120,13 @@ async function toFetchRequest(incoming: http.IncomingMessage): Promise<Request> 
   const method = incoming.method || "GET";
   const hasBody = method !== "GET" && method !== "HEAD";
   const body = hasBody ? await readBody(incoming) : undefined;
-  return new Request(requestUrl, { method, headers, body });
+  return {
+    id: nextRequestId++,
+    url: requestUrl.toString(),
+    method,
+    headers: [...headers.entries()],
+    body,
+  };
 }
 
 async function readBody(incoming: http.IncomingMessage): Promise<Uint8Array> {
@@ -106,19 +143,105 @@ async function readBody(incoming: http.IncomingMessage): Promise<Uint8Array> {
   return Buffer.concat(chunks);
 }
 
-async function writeFetchResponse(
-  outgoing: http.ServerResponse,
-  response: Response
-): Promise<void> {
-  outgoing.statusCode = response.status;
-  outgoing.statusMessage = response.statusText;
-  response.headers.forEach((value, name) => outgoing.setHeader(name, value));
-  const getSetCookie = (response.headers as Headers & { getSetCookie?: () => string[] }).getSetCookie;
-  if (getSetCookie) {
-    const cookies = getSetCookie.call(response.headers);
-    if (cookies.length > 0) outgoing.setHeader("set-cookie", cookies);
+function startQueryWorker() {
+  workerReady = false;
+  const worker = new Worker(new URL("./request-worker.mjs", import.meta.url), {
+    workerData: { databasePath, environment },
+  });
+  queryWorker = worker;
+
+  worker.on("message", (message: { type: string } | SerializedResponse) => {
+    if ("type" in message && message.type === "ready") {
+      workerReady = true;
+      dispatchNext();
+      return;
+    }
+    if ("type" in message) return;
+    if (!activeRequest || message.id !== activeRequest.request.id) return;
+
+    const { outgoing } = activeRequest;
+    activeRequest = null;
+    if (!outgoing.destroyed) {
+      outgoing.statusCode = message.status;
+      outgoing.statusMessage = message.statusText;
+      for (const [name, value] of message.headers) {
+        if (name.toLowerCase() === "set-cookie") {
+          const existing = outgoing.getHeader("set-cookie");
+          const cookies = Array.isArray(existing) ? existing : existing ? [String(existing)] : [];
+          outgoing.setHeader("set-cookie", [...cookies, value]);
+        } else {
+          outgoing.setHeader(name, value);
+        }
+      }
+      outgoing.end(Buffer.from(message.body));
+    }
+    dispatchNext();
+  });
+
+  worker.on("error", (error) => {
+    console.error(JSON.stringify({ event: "rldb_query_worker_error", error: error.message }));
+  });
+  worker.on("exit", (code) => {
+    if (queryWorker !== worker) return;
+    queryWorker = null;
+    workerReady = false;
+    failActiveRequest(new Error(`Query worker exited with code ${code}.`));
+    if (!shuttingDown) startQueryWorker();
+  });
+}
+
+function dispatchNext() {
+  if (!workerReady || !queryWorker || activeRequest || requestQueue.length === 0) return;
+  activeRequest = requestQueue.shift() || null;
+  if (!activeRequest) return;
+  queryWorker.postMessage(activeRequest.request);
+}
+
+function restartQueryWorker(reason: string) {
+  const worker = queryWorker;
+  queryWorker = null;
+  workerReady = false;
+  failActiveRequest(new Error(`Query cancelled: ${reason}.`));
+  console.warn(JSON.stringify({ event: "rldb_query_worker_restart", reason }));
+  if (worker) void worker.terminate();
+  if (!shuttingDown) startQueryWorker();
+}
+
+function failActiveRequest(error: Error) {
+  if (!activeRequest) return;
+  const { outgoing } = activeRequest;
+  activeRequest = null;
+  if (!outgoing.destroyed) writeError(outgoing, error);
+}
+
+function writeHealthResponse(outgoing: http.ServerResponse) {
+  const healthy = Boolean(queryWorker && workerReady);
+  outgoing.writeHead(healthy ? 200 : 503, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
+  });
+  outgoing.end(JSON.stringify({
+    ok: healthy,
+    service: "rugby-league-stats-database",
+    database: { configured: true, reachable: healthy },
+    query_worker: {
+      ready: workerReady,
+      busy: Boolean(activeRequest),
+      queued_requests: requestQueue.length,
+    },
+    checked_at_utc: new Date().toISOString(),
+  }, null, 2));
+}
+
+function writeError(outgoing: http.ServerResponse, error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!outgoing.headersSent) {
+    outgoing.writeHead(message === "Request body is too large." ? 413 : 500, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    });
   }
-  outgoing.end(Buffer.from(await response.arrayBuffer()));
+  outgoing.end(JSON.stringify({ ok: false, error: message }));
 }
 
 function parseInteger(value: string | undefined, fallback: number): number {
@@ -127,10 +250,10 @@ function parseInteger(value: string | undefined, fallback: number): number {
 }
 
 async function shutdown(signal: string) {
+  shuttingDown = true;
   console.log(JSON.stringify({ event: "rldb_direct_node_stopping", signal }));
   server.close(async () => {
-    await Promise.allSettled([...pendingBackgroundTasks]);
-    database.close();
+    if (queryWorker) await queryWorker.terminate();
     process.exit(0);
   });
   setTimeout(() => process.exit(1), 10000).unref();
