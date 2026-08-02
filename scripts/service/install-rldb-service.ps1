@@ -71,6 +71,7 @@ foreach ($releaseDirectory in @("dist", "scripts", "migrations\telemetry")) {
   New-Item -ItemType Directory -Force -Path (Join-Path $releaseRoot $releaseDirectory) | Out-Null
 }
 Copy-Item -LiteralPath (Join-Path $SourceRoot "dist\server.mjs") -Destination (Join-Path $releaseRoot "dist\server.mjs") -Force
+Copy-Item -LiteralPath (Join-Path $SourceRoot "dist\request-worker.mjs") -Destination (Join-Path $releaseRoot "dist\request-worker.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\query-telemetry-server.mjs") -Destination (Join-Path $releaseRoot "scripts\query-telemetry-server.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\report-query-telemetry.mjs") -Destination (Join-Path $releaseRoot "scripts\report-query-telemetry.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "migrations\telemetry\0001_query_performance.sql") -Destination (Join-Path $releaseRoot "migrations\telemetry\0001_query_performance.sql") -Force
