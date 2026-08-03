@@ -67,14 +67,16 @@ foreach ($directoryPath in $paths.Values) {
 }
 
 Write-Host "Installing release $gitCommit..."
-foreach ($releaseDirectory in @("dist", "scripts", "migrations\telemetry")) {
+foreach ($releaseDirectory in @("dist", "scripts", "migrations\telemetry", "migrations\application")) {
   New-Item -ItemType Directory -Force -Path (Join-Path $releaseRoot $releaseDirectory) | Out-Null
 }
 Copy-Item -LiteralPath (Join-Path $SourceRoot "dist\server.mjs") -Destination (Join-Path $releaseRoot "dist\server.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "dist\request-worker.mjs") -Destination (Join-Path $releaseRoot "dist\request-worker.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\query-telemetry-server.mjs") -Destination (Join-Path $releaseRoot "scripts\query-telemetry-server.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\report-query-telemetry.mjs") -Destination (Join-Path $releaseRoot "scripts\report-query-telemetry.mjs") -Force
+Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\apply-application-migrations.mjs") -Destination (Join-Path $releaseRoot "scripts\apply-application-migrations.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "migrations\telemetry\0001_query_performance.sql") -Destination (Join-Path $releaseRoot "migrations\telemetry\0001_query_performance.sql") -Force
+Copy-Item -Path (Join-Path $SourceRoot "migrations\application\*.sql") -Destination (Join-Path $releaseRoot "migrations\application") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\service\supervisor.mjs") -Destination (Join-Path $paths.Service "supervisor.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\service\run-supervisor.ps1") -Destination (Join-Path $paths.Service "run-supervisor.ps1") -Force
 Copy-Item -Path (Join-Path $SourceRoot "scripts\service\control\*.ps1") -Destination $paths.Control -Force
@@ -84,6 +86,7 @@ if (-not (Test-Path -LiteralPath $databasePath)) {
   Write-Host "Seeding independent database. This 2.3 GB copy can take several minutes..."
   Copy-Item -LiteralPath $SeedDatabase -Destination $databasePath
 }
+& $nodePath (Join-Path $releaseRoot "scripts\apply-application-migrations.mjs") $databasePath
 
 $existingConfigPath = Join-Path $paths.Config "service.json"
 $existingConfig = if (Test-Path -LiteralPath $existingConfigPath) {
@@ -98,7 +101,7 @@ if (-not $sessionSecret) {
 }
 $serviceConfig = [ordered]@{
   applicationVersion = $applicationVersion
-  schemaVersion = "0007_team_season_aggregates"
+  schemaVersion = "0008_team_opponent_lookup"
   releaseRoot = $releaseRoot
   nodePath = $nodePath
   databasePath = $databasePath

@@ -18,6 +18,8 @@ if (-not (Test-Path -LiteralPath $databasePath)) {
   throw "Independent development database not found: $databasePath"
 }
 
+& node.exe (Join-Path $projectRoot "scripts\apply-application-migrations.mjs") $databasePath
+
 New-Item -ItemType Directory -Force -Path $logRoot, $pidRoot, (Split-Path -Parent $telemetryDatabasePath) | Out-Null
 
 function Get-ListeningPid([int]$Port) {
@@ -63,7 +65,7 @@ if (-not $telemetryPid) {
       RLDB_TELEMETRY_PORT = $TelemetryPort
       RLDB_TELEMETRY_DB_PATH = $telemetryDatabasePath
       RLDB_APPLICATION_VERSION = "direct-node-development"
-      RLDB_SCHEMA_VERSION = "0007_team_season_aggregates"
+      RLDB_SCHEMA_VERSION = "0008_team_opponent_lookup"
     } `
     -StdoutPath (Join-Path $logRoot "telemetry.out.log") `
     -StderrPath (Join-Path $logRoot "telemetry.err.log")
@@ -80,7 +82,7 @@ if (-not $backendPid) {
       RLDB_DATABASE_PATH = $databasePath
       TELEMETRY_ENDPOINT = "http://127.0.0.1:$TelemetryPort/events"
       RLDB_APPLICATION_VERSION = "direct-node-development"
-      RLDB_SCHEMA_VERSION = "0007_team_season_aggregates"
+      RLDB_SCHEMA_VERSION = "0008_team_opponent_lookup"
       RLDB_RUNTIME_MODE = "development"
     } `
     -StdoutPath (Join-Path $logRoot "backend.out.log") `

@@ -13,7 +13,9 @@
     "smoke": "node scripts/smoke-test.mjs",
     "parity": "node scripts/functional-parity.mjs",
     "audit:database": "node scripts/audit-database-parity.mjs",
+    "audit:indexes": "node scripts/audit-proposed-indexes.mjs",
     "audit:player-aggregates": "node scripts/audit-player-aggregate-coverage.mjs",
+    "db:migrate": "node scripts/apply-application-migrations.mjs",
     "telemetry:serve": "node scripts/query-telemetry-server.mjs",
     "telemetry:report": "node scripts/report-query-telemetry.mjs"
   },
