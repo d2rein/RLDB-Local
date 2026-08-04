@@ -36,10 +36,10 @@ async function runNode(script, args) {
     child.once("exit", (code, signal) => code === 0 ? resolve() : reject(new Error(`${path.basename(script)} exited ${code ?? signal}`)));
   });
 }
-function inspectDatabase(databasePath) {
+function inspectDatabase(databasePath, { checkIntegrity = false } = {}) {
   const db = new DatabaseSync(databasePath, { readOnly: true });
   try {
-    const integrity = db.prepare("PRAGMA integrity_check").get().integrity_check;
+    const integrity = checkIntegrity ? db.prepare("PRAGMA quick_check").get().quick_check : "not_checked";
     const freshness = db.prepare(`SELECT c.code,MAX(m.round_index) latest_round,COUNT(DISTINCT m.match_id) matches,COUNT(DISTINCT p.player_match_summary_id) player_rows
       FROM matches m JOIN competitions c ON c.competition_id=m.competition_id JOIN player_match_summary p ON p.match_id=m.match_id
       WHERE m.season=? AND c.code IN (${competitions.map(() => "?").join(",")}) GROUP BY c.code ORDER BY c.code`).all(season, ...competitions);
@@ -55,7 +55,11 @@ if (mode === "prepare") {
       "--competition", competition, "--season", String(season), "--data-root", dataRoot,
     ]);
   }
-  await fsp.rm(stagingPath, { force: true });
+  await Promise.all([
+    fsp.rm(stagingPath, { force: true }),
+    fsp.rm(`${stagingPath}-wal`, { force: true }),
+    fsp.rm(`${stagingPath}-shm`, { force: true }),
+  ]);
   const source = new DatabaseSync(livePath, { readOnly: true });
   try {
     await backup(source, stagingPath, { rate: 5000, progress: ({ totalPages, remainingPages }) => {
@@ -65,8 +69,8 @@ if (mode === "prepare") {
   await runNode(path.join(releaseRoot, "scripts", "update", "import-current-season.mjs"), [
     "--database", stagingPath, "--data-root", dataRoot, "--season", String(season), "--competitions", competitions.join(","),
   ]);
+  // The importer exits successfully only after its staging quick_check passes.
   const before = inspectDatabase(livePath); const after = inspectDatabase(stagingPath);
-  if (after.integrity !== "ok") throw new Error(`Prepared database integrity failed: ${after.integrity}`);
   const beforeByCode = new Map(before.freshness.map((row) => [row.code, row]));
   for (const row of after.freshness) {
     const old = beforeByCode.get(row.code);
@@ -85,7 +89,7 @@ if (mode === "prepare") {
 
 if (mode === "promote") {
   const marker = JSON.parse(await fsp.readFile(markerPath, "utf8"));
-  const staged = inspectDatabase(stagingPath);
+  const staged = inspectDatabase(stagingPath, { checkIntegrity: true });
   if (staged.integrity !== "ok" || staged.bytes < 100_000_000) throw new Error("Prepared database failed promotion checks.");
   await fsp.mkdir(previousRoot, { recursive: true });
   await fsp.rm(previousPath, { force: true });

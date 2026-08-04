@@ -326,7 +326,9 @@ try {
   db.exec("COMMIT;");
 } catch (error) { db.exec("ROLLBACK;"); throw error; }
 
-const integrity = db.prepare("PRAGMA integrity_check").get().integrity_check;
+// quick_check catches malformed pages and broken table/index structure without
+// walking every index entry in this multi-gigabyte database.
+const integrity = db.prepare("PRAGMA quick_check").get().quick_check;
 if (integrity !== "ok") throw new Error(`Integrity check failed: ${integrity}`);
 db.exec("PRAGMA optimize;");
 console.log(JSON.stringify({ ok: true, databasePath, integrity, ...report }, null, 2));
