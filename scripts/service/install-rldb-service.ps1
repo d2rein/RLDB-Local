@@ -150,7 +150,9 @@ if ($tunnelRequested) {
   if (-not (Test-Path -LiteralPath $CloudflaredSourcePath)) {
     throw "cloudflared executable not found: $CloudflaredSourcePath"
   }
-  Copy-Item -LiteralPath $CloudflaredSourcePath -Destination $installedCloudflaredPath -Force
+  if (-not (Test-Path -LiteralPath $installedCloudflaredPath)) {
+    Copy-Item -LiteralPath $CloudflaredSourcePath -Destination $installedCloudflaredPath
+  }
   @"
 tunnel: $effectiveTunnelId
 credentials-file: $installedTunnelCredentialsPath
