@@ -1,6 +1,7 @@
 param(
   [string]$SourceRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)),
   [string]$SeedDatabase = "C:\Users\d2rei\My_Site\rldb-direct-node-runtime\data\rldb.sqlite",
+  [string]$SeedUpdateDataRoot = "C:\Users\d2rei\My_Site\rugby-league-stats-db-local\docs\NRL-Data-main_duplicate\data",
   [string]$InstallRoot = "C:\RLDB",
   [string]$ServiceUser = "$env:COMPUTERNAME\rldbsvc",
   [string]$ControlUser = "$env:COMPUTERNAME\d2rei",
@@ -61,13 +62,14 @@ $paths = @{
   Control = Join-Path $InstallRoot "control"
   Config = Join-Path $InstallRoot "config"
   Service = Join-Path $InstallRoot "service"
+  UpdateData = Join-Path $InstallRoot "update-data"
 }
 foreach ($directoryPath in $paths.Values) {
   New-Item -ItemType Directory -Force -Path ([string]$directoryPath) | Out-Null
 }
 
 Write-Host "Installing release $gitCommit..."
-foreach ($releaseDirectory in @("dist", "scripts", "migrations\telemetry", "migrations\application")) {
+foreach ($releaseDirectory in @("dist", "scripts", "scripts\update", "migrations\telemetry", "migrations\application")) {
   New-Item -ItemType Directory -Force -Path (Join-Path $releaseRoot $releaseDirectory) | Out-Null
 }
 Copy-Item -LiteralPath (Join-Path $SourceRoot "dist\server.mjs") -Destination (Join-Path $releaseRoot "dist\server.mjs") -Force
@@ -75,6 +77,7 @@ Copy-Item -LiteralPath (Join-Path $SourceRoot "dist\request-worker.mjs") -Destin
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\query-telemetry-server.mjs") -Destination (Join-Path $releaseRoot "scripts\query-telemetry-server.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\report-query-telemetry.mjs") -Destination (Join-Path $releaseRoot "scripts\report-query-telemetry.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\apply-application-migrations.mjs") -Destination (Join-Path $releaseRoot "scripts\apply-application-migrations.mjs") -Force
+Copy-Item -Path (Join-Path $SourceRoot "scripts\update\*.mjs") -Destination (Join-Path $releaseRoot "scripts\update") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "migrations\telemetry\0001_query_performance.sql") -Destination (Join-Path $releaseRoot "migrations\telemetry\0001_query_performance.sql") -Force
 Copy-Item -Path (Join-Path $SourceRoot "migrations\application\*.sql") -Destination (Join-Path $releaseRoot "migrations\application") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\service\supervisor.mjs") -Destination (Join-Path $paths.Service "supervisor.mjs") -Force
@@ -85,6 +88,20 @@ $databasePath = Join-Path $paths.Data "rldb.sqlite"
 if (-not (Test-Path -LiteralPath $databasePath)) {
   Write-Host "Seeding independent database. This 2.3 GB copy can take several minutes..."
   Copy-Item -LiteralPath $SeedDatabase -Destination $databasePath
+}
+
+foreach ($competition in @("NRL", "NRLW")) {
+  $sourceDirectory = Join-Path $SeedUpdateDataRoot "$competition\2026"
+  $destinationDirectory = Join-Path $paths.UpdateData "$competition\2026"
+  if (-not (Test-Path -LiteralPath $destinationDirectory)) {
+    if (-not (Test-Path -LiteralPath $sourceDirectory)) {
+      throw "Initial updater source data not found: $sourceDirectory"
+    }
+    New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
+    Copy-Item -LiteralPath (Join-Path $sourceDirectory "${competition}_data_2026.json") -Destination $destinationDirectory
+    Copy-Item -LiteralPath (Join-Path $sourceDirectory "${competition}_detailed_match_data_2026.json") -Destination $destinationDirectory
+    Copy-Item -LiteralPath (Join-Path $sourceDirectory "${competition}_player_statistics_2026.json") -Destination $destinationDirectory
+  }
 }
 & $nodePath (Join-Path $releaseRoot "scripts\apply-application-migrations.mjs") $databasePath
 
@@ -112,6 +129,12 @@ $serviceConfig = [ordered]@{
   backendPort = $BackendPort
   telemetryPort = $TelemetryPort
   maxRequestBodyBytes = 1048576
+  updateEnabled = $true
+  updateDayOfWeek = 1
+  updateHourLocal = 1
+  updateSeason = 0
+  updateCompetitions = @("NRL", "NRLW")
+  updateDataRoot = $paths.UpdateData
   sitePasswordHash = [string]$existingConfig.sitePasswordHash
   siteSessionSecret = $sessionSecret
 }
@@ -120,7 +143,7 @@ Set-Content -LiteralPath (Join-Path $paths.Control "desired-state.txt") -Value "
 
 Write-Host "Applying restricted filesystem permissions..."
 & icacls.exe $InstallRoot "/inheritance:r" "/grant:r" "SYSTEM:(OI)(CI)F" "BUILTIN\Administrators:(OI)(CI)F" "${ServiceUser}:(OI)(CI)RX" "${ControlUser}:(OI)(CI)RX" | Out-Null
-foreach ($writePath in @($paths.Data, $paths.Logs, $paths.Runtime, $paths.Telemetry, $paths.Backups)) {
+foreach ($writePath in @($paths.Data, $paths.Logs, $paths.Runtime, $paths.Telemetry, $paths.Backups, $paths.UpdateData)) {
   & icacls.exe $writePath "/grant:r" "${ServiceUser}:(OI)(CI)M" "${ControlUser}:(OI)(CI)R" | Out-Null
 }
 & icacls.exe $paths.Control "/grant:r" "${ServiceUser}:(OI)(CI)M" "${ControlUser}:(OI)(CI)M" | Out-Null

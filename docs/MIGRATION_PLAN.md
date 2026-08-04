@@ -46,7 +46,7 @@ operational database.
 3. Unit tests for D1-compatible return values, binding, errors, and shutdown.
 4. Independent development database seed and schema verification.
 5. Live parity benchmark against the operational backend.
-6. Independent weekly updater and update verification.
+6. Independent weekly updater and update verification. (implemented)
 7. Restricted-account service, health checks, logs, and control scripts.
 8. Separate test tunnel and second live parity benchmark.
 9. Reviewed production cutover documentation.
@@ -69,6 +69,12 @@ After seeding:
   cutoff;
 - frozen benchmark snapshots are temporary test artifacts and are deleted
   after an experiment unless explicitly retained.
+
+The implemented updater handles NRL and NRLW current-season payloads without
+Python, Chrome, Wrangler, Miniflare, or access to the operational repository.
+It stages updates using SQLite's backup API, imports only complete rounds,
+rebuilds affected season aggregates, validates the result, and retains one
+immediate rollback database.
 
 ## Runtime layout
 

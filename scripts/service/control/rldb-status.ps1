@@ -11,6 +11,12 @@ if (Test-Path -LiteralPath $statusPath) {
   Write-Host "Supervisor status file is not available."
 }
 
+$updateStatusPath = Join-Path $InstallRoot "runtime\update-status.json"
+if (Test-Path -LiteralPath $updateStatusPath) {
+  Write-Host "Update status:"
+  Get-Content -LiteralPath $updateStatusPath -Raw
+}
+
 foreach ($port in @($BackendPort, $TelemetryPort)) {
   $listener = netstat -ano | Select-String -Pattern "127\.0\.0\.1:$port\s+.*LISTENING\s+(\d+)" | Select-Object -First 1
   Write-Host "Port ${port}: $(if ($listener) { 'listening' } else { 'stopped' })"

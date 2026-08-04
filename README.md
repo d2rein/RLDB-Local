@@ -24,8 +24,14 @@ telemetry children after a crash. The candidate passes its D1-compatibility
 unit tests and representative endpoint checks. It does not serve production
 traffic or modify the operational database.
 
-The candidate still requires full benchmarking, a separate test tunnel, and an
-independent weekly updater before it can be considered for production cutover.
+The candidate has an independent weekly updater for NRL and NRLW. It fetches
+current-season data directly, prepares and validates a consistent staging
+database while the candidate remains online, and briefly stops the candidate
+only to promote the database. One previous database is retained for rollback,
+and a failed post-promotion health check triggers an automatic rollback.
+
+The candidate still requires a separate test tunnel and final live parity
+review before it can be considered for production cutover.
 
 The operational system remains:
 

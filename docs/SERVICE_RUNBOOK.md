@@ -45,11 +45,38 @@ C:\RLDB\control\rldb-start.ps1
 C:\RLDB\control\rldb-stop.ps1
 C:\RLDB\control\rldb-restart.ps1
 C:\RLDB\control\rldb-logs.ps1
+C:\RLDB\control\rldb-update.ps1
 ```
 
 The supervisor reads command files from `C:\RLDB\control`. It restarts crashed
 backend or telemetry children automatically. The scheduled task restarts the
 supervisor if the supervisor itself exits.
+
+## Weekly data update
+
+The candidate independently fetches and imports NRL and NRLW data each Monday
+at 1:00 AM local time. Source payloads are stored under
+`C:\RLDB\update-data`; the updater does not copy the operational database after
+the initial installation seed.
+
+Preparation uses `C:\RLDB\data\staging\rldb-update.sqlite` while the current
+database remains available. The candidate is stopped only for the final file
+promotion. `C:\RLDB\data\previous\rldb.sqlite` is the single retained rollback
+database. Integrity, freshness, match-count, row-count, and post-promotion
+health checks must pass. A failed health check automatically restores the
+previous database.
+
+Request an update manually and inspect progress with:
+
+```powershell
+C:\RLDB\control\rldb-update.ps1
+C:\RLDB\control\rldb-status.ps1
+C:\RLDB\control\rldb-logs.ps1
+```
+
+Updater details are written to `C:\RLDB\logs\update.out.log` and failures to
+`C:\RLDB\logs\update.err.log`. The latest machine-readable state is
+`C:\RLDB\runtime\update-status.json`.
 
 ## Permissions
 
