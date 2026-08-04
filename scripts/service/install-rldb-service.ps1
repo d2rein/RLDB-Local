@@ -170,6 +170,17 @@ if (-not $existingTask) {
   }
 } else {
   Write-Host "Retaining existing scheduled-task credentials."
+  Write-Host "Restarting the existing candidate task to load the new release."
+  Stop-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+  for ($attempt = 1; $attempt -le 30; $attempt += 1) {
+    $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+    if (-not $listener) { break }
+    Start-Sleep -Seconds 1
+  }
+  $staleListener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+  if ($staleListener) {
+    throw "The previous candidate process did not stop listening on port $BackendPort."
+  }
 }
 Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
 
