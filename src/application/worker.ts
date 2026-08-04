@@ -295,6 +295,17 @@ function isLoopbackHostname(hostname: string): boolean {
   return hostname === "127.0.0.1" || hostname === "localhost";
 }
 
+function isForwardedHttpsRequest(request: Request): boolean {
+  if ((request.headers.get("x-forwarded-proto") ?? "").toLowerCase() === "https") return true;
+  const cfVisitor = request.headers.get("cf-visitor");
+  if (!cfVisitor) return false;
+  try {
+    return String(JSON.parse(cfVisitor)?.scheme ?? "").toLowerCase() === "https";
+  } catch {
+    return false;
+  }
+}
+
 function isProxyEligibleRequestPath(pathname: string): boolean {
   return PROXY_ELIGIBLE_PATHS.has(pathname);
 }
@@ -12440,7 +12451,12 @@ const applicationWorker = {
     const url = new URL(request.url);
     const isProxiedPublicBackendRequest = request.headers.get("x-rldb-proxied-by") === "cloudflare-public-site";
 
-    if (url.protocol === "http:" && !isLoopbackHostname(url.hostname) && !isProxiedPublicBackendRequest) {
+    if (
+      url.protocol === "http:"
+      && !isLoopbackHostname(url.hostname)
+      && !isProxiedPublicBackendRequest
+      && !isForwardedHttpsRequest(request)
+    ) {
       url.protocol = "https:";
       return Response.redirect(url.toString(), 301);
     }
