@@ -1,8 +1,10 @@
 import crypto from "node:crypto";
 
-const operational = "http://127.0.0.1:8797";
-const candidate = "http://127.0.0.1:8899";
+const operational = String(process.env.RLDB_OPERATIONAL_BASE_URL || "http://127.0.0.1:8797").replace(/\/$/, "");
+const candidate = String(process.env.RLDB_CANDIDATE_BASE_URL || "http://127.0.0.1:8899").replace(/\/$/, "");
+const sitePassword = String(process.env.RLDB_SITE_PASSWORD || "");
 const requestTimeoutMs = 135000;
+const sessionCookies = new Map();
 
 const cases = [
   { name: "bootstrap", path: "/api/meta/bootstrap" },
@@ -87,14 +89,17 @@ async function fetchJson(url) {
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     try {
-      const response = await fetch(url, {
-        headers: { "x-rldb-query-source": "development-parity" },
-        signal: AbortSignal.timeout(requestTimeoutMs),
-      });
+      const started = performance.now();
+      let response = await fetchWithSession(url);
+      if (response.status === 401 && sitePassword) {
+        await authenticate(new URL(url).origin);
+        response = await fetchWithSession(url);
+      }
       const text = await response.text();
       if (!response.ok) {
         throw new Error(`${url} returned HTTP ${response.status}: ${text.slice(0, 500)}`);
       }
+      console.log(`  ${new URL(url).origin} ${Math.round(performance.now() - started)}ms`);
       return JSON.parse(text);
     } catch (error) {
       lastError = error;
@@ -102,6 +107,35 @@ async function fetchJson(url) {
     }
   }
   throw new Error(`${url} failed after 3 attempts: ${lastError?.message || lastError}`);
+}
+
+async function fetchWithSession(url) {
+  const origin = new URL(url).origin;
+  const cookie = sessionCookies.get(origin);
+  return fetch(url, {
+    headers: {
+      "x-rldb-query-source": "development-parity",
+      ...(cookie ? { cookie } : {}),
+    },
+    redirect: "manual",
+    signal: AbortSignal.timeout(requestTimeoutMs),
+  });
+}
+
+async function authenticate(origin) {
+  if (!sitePassword) throw new Error(`${origin} requires authentication but RLDB_SITE_PASSWORD is not set.`);
+  const response = await fetch(`${origin}/auth/login`, {
+    method: "POST",
+    redirect: "manual",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ password: sitePassword, next: "/" }),
+    signal: AbortSignal.timeout(30000),
+  });
+  const cookie = (response.headers.get("set-cookie") || "").split(";", 1)[0];
+  if (response.status !== 302 || !cookie) {
+    throw new Error(`${origin} login failed with HTTP ${response.status}.`);
+  }
+  sessionCookies.set(origin, cookie);
 }
 
 function normalizeForComparison(name, value) {
