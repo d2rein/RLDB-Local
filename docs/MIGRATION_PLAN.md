@@ -48,7 +48,8 @@ operational database.
 5. Live parity benchmark against the operational backend.
 6. Independent weekly updater and update verification. (implemented)
 7. Restricted-account service, health checks, logs, and control scripts.
-8. Separate test tunnel and second live parity benchmark.
+8. Separate test tunnel and second live parity benchmark. (implemented; live
+   databases currently have different cutoffs)
 9. Reviewed production cutover documentation.
 
 Each commit must be independently reversible.

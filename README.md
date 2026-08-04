@@ -30,8 +30,11 @@ database while the candidate remains online, and briefly stops the candidate
 only to promote the database. One previous database is retained for rollback,
 and a failed post-promotion health check triggers an automatic rollback.
 
-The candidate supports a separate supervised test tunnel. A final live parity
-review through that hostname is still required before production cutover.
+The candidate is available through the separate supervised test hostname
+`https://rldb-test.drein.net`. External-path and live comparison results are
+recorded in
+[docs/PUBLIC_TEST_VALIDATION_2026-08-04.md](docs/PUBLIC_TEST_VALIDATION_2026-08-04.md).
+User acceptance review is still required before production cutover.
 
 The operational system remains:
 
