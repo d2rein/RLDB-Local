@@ -69,6 +69,11 @@ index integrity audits remain a separate maintenance operation: both
 on this heavily indexed database and are unsuitable for the weekly path. A
 failed health check automatically restores the previous database.
 
+Before promotion, the importer checkpoints and truncates SQLite's WAL and the
+promoter refuses any non-empty WAL sidecar. Post-promotion health includes
+real team first-half and player match-level queries, not only the lightweight
+health endpoint.
+
 Request an update manually and inspect progress with:
 
 ```powershell

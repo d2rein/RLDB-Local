@@ -343,5 +343,14 @@ if (Number(invalidCurrentMatches) !== 0) {
 }
 const integrity = "targeted_current_season_checks_passed";
 db.exec("PRAGMA optimize;");
+const checkpoint = db.prepare("PRAGMA wal_checkpoint(TRUNCATE)").get();
+if (Number(checkpoint.busy) !== 0 || Number(checkpoint.log) !== 0) {
+  throw new Error(`Unable to checkpoint staging WAL (busy=${checkpoint.busy}, log=${checkpoint.log}).`);
+}
 console.log(JSON.stringify({ ok: true, databasePath, integrity, ...report }, null, 2));
 db.close();
+
+const walPath = `${databasePath}-wal`;
+if (fs.existsSync(walPath) && fs.statSync(walPath).size !== 0) {
+  throw new Error(`Staging WAL was not fully checkpointed: ${walPath}`);
+}

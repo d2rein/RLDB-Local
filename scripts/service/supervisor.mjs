@@ -131,12 +131,12 @@ async function maybeRunUpdate() {
     await runUpdater("promote");
     startMissingServices();
     servicesRestarted = true;
-    if (!await waitForBackendHealth(45000)) {
+    if (!await waitForBackendHealth(240000)) {
       log("weekly_update_health_failed", { action: "rollback" });
       await stopAll("weekly_update_health_rollback");
       await runUpdater("rollback");
       startMissingServices();
-      if (!await waitForBackendHealth(45000)) {
+      if (!await waitForBackendHealth(240000)) {
         throw new Error("Candidate remained unhealthy after automatic update rollback.");
       }
       throw new Error("Updated database failed its health check and was rolled back.");
@@ -162,11 +162,40 @@ async function waitForBackendHealth(timeoutMs) {
   while (Date.now() < deadline) {
     try {
       const response = await fetch(healthUrl, { signal: AbortSignal.timeout(3000) });
-      if (response.ok) return true;
+      if (response.ok) break;
     } catch {}
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  return false;
+  if (Date.now() >= deadline) return false;
+
+  const seasonTo = String(new Date().getFullYear());
+  const common = new URLSearchParams({
+    competition: "NRL", seasonFrom: "1908", seasonTo,
+    excludeSparseHistoricalStreaks: "0", includeRegular: "1",
+    includeFinals: "1", includeGrandFinal: "1", mode: "totals",
+    format: "match", conditions: "[]", limit: "1", page: "1", pageSize: "1",
+  });
+  const smokeQueries = [
+    { scope: "team", statKey: "points_for", scoreHalf: "first" },
+    { scope: "player", statKey: "tries", scoreHalf: "all" },
+  ];
+  for (const query of smokeQueries) {
+    const params = new URLSearchParams(common);
+    for (const [key, value] of Object.entries(query)) params.set(key, value);
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return false;
+    try {
+      const response = await fetch(`http://127.0.0.1:${config.backendPort}/api/query?${params}`, {
+        signal: AbortSignal.timeout(Math.min(remaining, 150000)),
+      });
+      if (!response.ok) return false;
+      const body = await response.json();
+      if (!Array.isArray(body.rows) || body.rows.length === 0 || body.error) return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
 }
 
 async function runUpdater(mode) {

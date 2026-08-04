@@ -46,6 +46,29 @@ function inspectDatabase(databasePath) {
   } finally { db.close(); }
 }
 
+function checkpointStandalone(databasePath) {
+  const db = new DatabaseSync(databasePath);
+  try {
+    const checkpoint = db.prepare("PRAGMA wal_checkpoint(TRUNCATE)").get();
+    if (Number(checkpoint.busy) !== 0 || Number(checkpoint.log) !== 0) {
+      throw new Error(`Unable to checkpoint ${databasePath} (busy=${checkpoint.busy}, log=${checkpoint.log}).`);
+    }
+  } finally {
+    db.close();
+  }
+  const walPath = `${databasePath}-wal`;
+  if (fs.existsSync(walPath) && fs.statSync(walPath).size !== 0) {
+    throw new Error(`Database still has an uncheckpointed WAL: ${walPath}`);
+  }
+}
+
+async function removeSidecars(databasePath) {
+  await Promise.all([
+    fsp.rm(`${databasePath}-wal`, { force: true }),
+    fsp.rm(`${databasePath}-shm`, { force: true }),
+  ]);
+}
+
 if (mode === "prepare") {
   await writeStatus("preparing", { season, competitions });
   await Promise.all([fsp.mkdir(stagingRoot, { recursive: true }), fsp.mkdir(dataRoot, { recursive: true })]);
@@ -87,14 +110,22 @@ if (mode === "prepare") {
 }
 
 if (mode === "promote") {
-  const marker = JSON.parse(await fsp.readFile(markerPath, "utf8"));
+  const marker = JSON.parse((await fsp.readFile(markerPath, "utf8")).replace(/^\uFEFF/, ""));
+  checkpointStandalone(livePath);
+  checkpointStandalone(stagingPath);
   const staged = inspectDatabase(stagingPath);
   if (staged.bytes < 100_000_000) throw new Error("Prepared database failed promotion checks.");
+  const stagedWalPath = `${stagingPath}-wal`;
+  if (fs.existsSync(stagedWalPath) && fs.statSync(stagedWalPath).size !== 0) {
+    throw new Error(`Prepared database still has an uncheckpointed WAL: ${stagedWalPath}`);
+  }
+  await removeSidecars(livePath);
   await fsp.mkdir(previousRoot, { recursive: true });
   await fsp.rm(previousPath, { force: true });
   await fsp.rename(livePath, previousPath);
   try { await fsp.rename(stagingPath, livePath); }
   catch (error) { await fsp.rename(previousPath, livePath); throw error; }
+  await removeSidecars(stagingPath);
   await fsp.rm(markerPath, { force: true });
   await writeStatus("promoted", { ...marker, promotedAtUtc: new Date().toISOString(), previousPath });
   console.log(`Promoted ${livePath}; rollback retained at ${previousPath}`);
@@ -102,10 +133,14 @@ if (mode === "promote") {
 
 if (mode === "rollback") {
   if (!fs.existsSync(previousPath)) throw new Error(`No rollback database exists at ${previousPath}`);
+  checkpointStandalone(livePath);
+  checkpointStandalone(previousPath);
+  await removeSidecars(livePath);
   const failedPath = `${livePath}.failed-${Date.now()}`;
   await fsp.rename(livePath, failedPath);
   try { await fsp.rename(previousPath, livePath); }
   catch (error) { await fsp.rename(failedPath, livePath); throw error; }
+  await removeSidecars(previousPath);
   await fsp.rm(failedPath, { force: true });
   await writeStatus("rolled_back", { rolledBackAtUtc: new Date().toISOString() });
 }
