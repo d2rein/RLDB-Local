@@ -7,7 +7,11 @@ param(
   [string]$ControlUser = "$env:COMPUTERNAME\d2rei",
   [string]$TaskName = "RLDB-Direct-Node-Supervisor",
   [int]$BackendPort = 8899,
-  [int]$TelemetryPort = 8890
+  [int]$TelemetryPort = 8890,
+  [string]$CandidateTunnelId = "",
+  [string]$CandidateTunnelHostname = "",
+  [string]$CandidateTunnelCredentialsPath = "",
+  [string]$CloudflaredSourcePath = "C:\Program Files (x86)\cloudflared\cloudflared.exe"
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,6 +30,16 @@ function New-CryptographicRandomBytes([int]$Length) {
     $generator.Dispose()
   }
   return $bytes
+}
+
+function Get-Sha256Hex([string]$Value) {
+  $sha = [Security.Cryptography.SHA256]::Create()
+  try {
+    $bytes = [Text.Encoding]::UTF8.GetBytes($Value)
+    return ([BitConverter]::ToString($sha.ComputeHash($bytes))).Replace("-", "").ToLowerInvariant()
+  } finally {
+    $sha.Dispose()
+  }
 }
 
 if ($BackendPort -in @(8797, 8798) -or $TelemetryPort -in @(8797, 8798)) {
@@ -61,6 +75,7 @@ $paths = @{
   Backups = Join-Path $InstallRoot "backups"
   Control = Join-Path $InstallRoot "control"
   Config = Join-Path $InstallRoot "config"
+  Bin = Join-Path $InstallRoot "bin"
   Service = Join-Path $InstallRoot "service"
   UpdateData = Join-Path $InstallRoot "update-data"
 }
@@ -111,10 +126,63 @@ $existingConfig = if (Test-Path -LiteralPath $existingConfigPath) {
 } else {
   $null
 }
+$existingTunnelEnabled = [bool]$existingConfig.tunnelEnabled
+$effectiveTunnelId = if ($CandidateTunnelId) { $CandidateTunnelId } else { [string]$existingConfig.tunnelId }
+$effectiveTunnelHostname = if ($CandidateTunnelHostname) { $CandidateTunnelHostname } else { [string]$existingConfig.tunnelHostname }
+$tunnelRequested = [bool]($effectiveTunnelId -or $effectiveTunnelHostname -or $CandidateTunnelCredentialsPath -or $existingTunnelEnabled)
+$installedCloudflaredPath = Join-Path $paths.Bin "cloudflared.exe"
+$installedTunnelCredentialsPath = Join-Path $paths.Config "candidate-tunnel.json"
+$installedTunnelConfigPath = Join-Path $paths.Config "candidate-tunnel.yml"
+
+if ($tunnelRequested) {
+  if (-not $effectiveTunnelId -or -not $effectiveTunnelHostname) {
+    throw "Candidate tunnel requires both a tunnel ID and hostname."
+  }
+  if ($effectiveTunnelHostname -in @("rldb.drein.net", "rldb-origin.drein.net")) {
+    throw "The candidate installer refuses to use a production hostname."
+  }
+  if (-not (Test-Path -LiteralPath $installedTunnelCredentialsPath)) {
+    if (-not $CandidateTunnelCredentialsPath -or -not (Test-Path -LiteralPath $CandidateTunnelCredentialsPath)) {
+      throw "Candidate tunnel credentials were not found. Supply -CandidateTunnelCredentialsPath for the first tunnel installation."
+    }
+    Copy-Item -LiteralPath $CandidateTunnelCredentialsPath -Destination $installedTunnelCredentialsPath -Force
+  }
+  if (-not (Test-Path -LiteralPath $CloudflaredSourcePath)) {
+    throw "cloudflared executable not found: $CloudflaredSourcePath"
+  }
+  Copy-Item -LiteralPath $CloudflaredSourcePath -Destination $installedCloudflaredPath -Force
+  @"
+tunnel: $effectiveTunnelId
+credentials-file: $installedTunnelCredentialsPath
+
+ingress:
+  - hostname: $effectiveTunnelHostname
+    service: http://127.0.0.1:$BackendPort
+  - service: http_status:404
+"@ | Set-Content -LiteralPath $installedTunnelConfigPath -Encoding ascii
+}
+
 $sessionSecret = [string]$existingConfig.siteSessionSecret
 if (-not $sessionSecret) {
   $sessionSecretBytes = New-CryptographicRandomBytes 48
   $sessionSecret = [Convert]::ToBase64String($sessionSecretBytes)
+}
+$sitePasswordHash = [string]$existingConfig.sitePasswordHash
+if ($tunnelRequested -and -not $sitePasswordHash) {
+  Write-Host "The public test hostname requires the shared site password."
+  $secureSitePassword = Read-Host "Enter the existing shared RLDB site password" -AsSecureString
+  $passwordPointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureSitePassword)
+  try {
+    $plainSitePassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($passwordPointer)
+    if (-not $plainSitePassword) { throw "The shared site password cannot be empty." }
+    $sitePasswordHash = Get-Sha256Hex $plainSitePassword
+  } finally {
+    if ($passwordPointer -ne [IntPtr]::Zero) {
+      [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($passwordPointer)
+    }
+    $plainSitePassword = $null
+    $secureSitePassword = $null
+  }
 }
 $serviceConfig = [ordered]@{
   applicationVersion = $applicationVersion
@@ -135,8 +203,13 @@ $serviceConfig = [ordered]@{
   updateSeason = 0
   updateCompetitions = @("NRL", "NRLW")
   updateDataRoot = $paths.UpdateData
-  sitePasswordHash = [string]$existingConfig.sitePasswordHash
+  sitePasswordHash = $sitePasswordHash
   siteSessionSecret = $sessionSecret
+  tunnelEnabled = $tunnelRequested
+  tunnelId = $effectiveTunnelId
+  tunnelHostname = $effectiveTunnelHostname
+  tunnelConfigPath = $(if ($tunnelRequested) { $installedTunnelConfigPath } else { "" })
+  cloudflaredPath = $(if ($tunnelRequested) { $installedCloudflaredPath } else { "" })
 }
 $serviceConfig | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $paths.Config "service.json") -Encoding utf8
 Set-Content -LiteralPath (Join-Path $paths.Control "desired-state.txt") -Value "running" -Encoding ascii

@@ -30,8 +30,8 @@ database while the candidate remains online, and briefly stops the candidate
 only to promote the database. One previous database is retained for rollback,
 and a failed post-promotion health check triggers an automatic rollback.
 
-The candidate still requires a separate test tunnel and final live parity
-review before it can be considered for production cutover.
+The candidate supports a separate supervised test tunnel. A final live parity
+review through that hostname is still required before production cutover.
 
 The operational system remains:
 

@@ -9,6 +9,7 @@ account. It remains independent of the operational Wrangler service and uses:
 - telemetry `127.0.0.1:8890`
 - install root `C:\RLDB`
 - scheduled task `RLDB-Direct-Node-Supervisor`
+- optional test tunnel `rldb-test.drein.net` supervised by the same task
 
 The installer refuses to use operational ports `8797` and `8798` and checks
 operational health before and after installation.
@@ -31,6 +32,22 @@ operation does not require entering the password.
 The installer grants `rldbsvc` only the Windows `Log on as a batch job`
 privilege required by that S4U task. It does not make the account an
 administrator or grant access to unrelated files.
+
+To install the separate candidate test tunnel for the first time, pass its
+non-production hostname, UUID, and credential file. The installer copies only
+that tunnel's narrowly scoped credential into the restricted configuration
+directory. It refuses the production hostnames and prompts once, without
+echoing, for the existing shared website password:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\service\install-rldb-service.ps1 `
+  -CandidateTunnelId "240f2c26-706c-430d-bc56-062638fa3ed9" `
+  -CandidateTunnelHostname "rldb-test.drein.net" `
+  -CandidateTunnelCredentialsPath "C:\Users\d2rei\.cloudflared\240f2c26-706c-430d-bc56-062638fa3ed9.json"
+```
+
+Later release installations retain the installed tunnel credential, hostname,
+and password hash, so those parameters and prompts are not repeated.
 
 The initial database is copied once. Reinstallation retains `C:\RLDB\data` and
 the existing site session secret.

@@ -65,6 +65,18 @@ const services = [
   },
 ];
 
+if (config.tunnelEnabled) {
+  if (!config.cloudflaredPath || !config.tunnelConfigPath || !config.tunnelId) {
+    throw new Error("Candidate tunnel is enabled but its executable, configuration, or tunnel ID is missing.");
+  }
+  services.push({
+    name: "tunnel",
+    executable: config.cloudflaredPath,
+    arguments: ["tunnel", "--config", config.tunnelConfigPath, "run", config.tunnelId],
+    workingDirectory: path.dirname(config.tunnelConfigPath),
+  });
+}
+
 log("supervisor_started", { pid: process.pid, configPath });
 
 const monitor = setInterval(() => void scheduleReconcile(), 2000);
@@ -219,8 +231,10 @@ function startService(service) {
   const previous = children.get(service.name) || { restarts: 0 };
   const stdout = fs.openSync(path.join(logRoot, `${service.name}.out.log`), "a");
   const stderr = fs.openSync(path.join(logRoot, `${service.name}.err.log`), "a");
-  const child = spawn(config.nodePath, [service.script], {
-    cwd: config.releaseRoot,
+  const executable = service.executable || config.nodePath;
+  const childArguments = service.arguments || [service.script];
+  const child = spawn(executable, childArguments, {
+    cwd: service.workingDirectory || config.releaseRoot,
     env: { ...process.env, ...service.environment },
     windowsHide: true,
     stdio: ["ignore", stdout, stderr],
