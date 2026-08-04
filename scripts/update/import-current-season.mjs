@@ -326,10 +326,22 @@ try {
   db.exec("COMMIT;");
 } catch (error) { db.exec("ROLLBACK;"); throw error; }
 
-// quick_check catches malformed pages and broken table/index structure without
-// walking every index entry in this multi-gigabyte database.
-const integrity = db.prepare("PRAGMA quick_check").get().quick_check;
-if (integrity !== "ok") throw new Error(`Integrity check failed: ${integrity}`);
+const invalidCurrentMatches = db.prepare(`WITH current_matches AS (
+    SELECT m.match_id FROM matches m JOIN competitions c ON c.competition_id=m.competition_id
+    WHERE m.season=? AND c.code IN (${competitions.map(() => "?").join(",")})
+  ), team_counts AS (
+    SELECT t.match_id,COUNT(*) team_rows FROM team_match_summary t
+    JOIN current_matches m ON m.match_id=t.match_id GROUP BY t.match_id
+  ), player_counts AS (
+    SELECT p.match_id,COUNT(*) player_rows FROM player_match_summary p
+    JOIN current_matches m ON m.match_id=p.match_id GROUP BY p.match_id
+  )
+  SELECT COUNT(*) AS count FROM player_counts p LEFT JOIN team_counts t ON t.match_id=p.match_id
+  WHERE COALESCE(t.team_rows,0)<>2 OR p.player_rows<20`).get(season, ...competitions).count;
+if (Number(invalidCurrentMatches) !== 0) {
+  throw new Error(`Current-season summary validation failed for ${invalidCurrentMatches} matches.`);
+}
+const integrity = "targeted_current_season_checks_passed";
 db.exec("PRAGMA optimize;");
 console.log(JSON.stringify({ ok: true, databasePath, integrity, ...report }, null, 2));
 db.close();

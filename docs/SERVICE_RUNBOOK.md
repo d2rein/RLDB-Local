@@ -62,12 +62,12 @@ the initial installation seed.
 Preparation uses `C:\RLDB\data\staging\rldb-update.sqlite` while the current
 database remains available. The candidate is stopped only for the final file
 promotion. `C:\RLDB\data\previous\rldb.sqlite` is the single retained rollback
-database. SQLite `quick_check`, freshness, match-count, row-count, and
-post-promotion health checks must pass. `quick_check` is used for the weekly
-path because a full `integrity_check` repeatedly scans every index entry in
-the multi-gigabyte database; full integrity audits remain a separate
-maintenance operation. A failed health check automatically restores the
-previous database.
+database. Current-season summary invariants, freshness, match-count,
+row-count, and post-promotion health checks must pass. Full SQLite page and
+index integrity audits remain a separate maintenance operation: both
+`integrity_check` and `quick_check` generate tens of gigabytes of random reads
+on this heavily indexed database and are unsuitable for the weekly path. A
+failed health check automatically restores the previous database.
 
 Request an update manually and inspect progress with:
 

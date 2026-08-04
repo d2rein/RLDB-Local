@@ -36,14 +36,13 @@ async function runNode(script, args) {
     child.once("exit", (code, signal) => code === 0 ? resolve() : reject(new Error(`${path.basename(script)} exited ${code ?? signal}`)));
   });
 }
-function inspectDatabase(databasePath, { checkIntegrity = false } = {}) {
+function inspectDatabase(databasePath) {
   const db = new DatabaseSync(databasePath, { readOnly: true });
   try {
-    const integrity = checkIntegrity ? db.prepare("PRAGMA quick_check").get().quick_check : "not_checked";
     const freshness = db.prepare(`SELECT c.code,MAX(m.round_index) latest_round,COUNT(DISTINCT m.match_id) matches,COUNT(DISTINCT p.player_match_summary_id) player_rows
       FROM matches m JOIN competitions c ON c.competition_id=m.competition_id JOIN player_match_summary p ON p.match_id=m.match_id
       WHERE m.season=? AND c.code IN (${competitions.map(() => "?").join(",")}) GROUP BY c.code ORDER BY c.code`).all(season, ...competitions);
-    return { integrity, bytes: fs.statSync(databasePath).size, freshness };
+    return { bytes: fs.statSync(databasePath).size, freshness };
   } finally { db.close(); }
 }
 
@@ -69,7 +68,7 @@ if (mode === "prepare") {
   await runNode(path.join(releaseRoot, "scripts", "update", "import-current-season.mjs"), [
     "--database", stagingPath, "--data-root", dataRoot, "--season", String(season), "--competitions", competitions.join(","),
   ]);
-  // The importer exits successfully only after its staging quick_check passes.
+  // The importer exits successfully only after its targeted current-season checks pass.
   const before = inspectDatabase(livePath); const after = inspectDatabase(stagingPath);
   const beforeByCode = new Map(before.freshness.map((row) => [row.code, row]));
   for (const row of after.freshness) {
@@ -89,8 +88,8 @@ if (mode === "prepare") {
 
 if (mode === "promote") {
   const marker = JSON.parse(await fsp.readFile(markerPath, "utf8"));
-  const staged = inspectDatabase(stagingPath, { checkIntegrity: true });
-  if (staged.integrity !== "ok" || staged.bytes < 100_000_000) throw new Error("Prepared database failed promotion checks.");
+  const staged = inspectDatabase(stagingPath);
+  if (staged.bytes < 100_000_000) throw new Error("Prepared database failed promotion checks.");
   await fsp.mkdir(previousRoot, { recursive: true });
   await fsp.rm(previousPath, { force: true });
   await fsp.rename(livePath, previousPath);
