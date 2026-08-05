@@ -4914,6 +4914,15 @@ function groupingColumns(scope: "player" | "team", format: string): {
   };
 }
 
+function groupedSourceValue(row: QueryRow, column: string): unknown {
+  if (column === "player" || column === "team") return row.entity;
+  if (column === "club") return row.club_name;
+  if (column === "ground") return row.venue_name;
+  if (column === "opposition") return row.opposition_name;
+  if (column === "round") return row.round_label;
+  return row[column];
+}
+
 function applyAggregateConditions(rows: QueryRow[], conditions: QueryCondition[], selectedStatKey: string): QueryRow[] {
   const activeConditions = conditions.filter((condition) => condition.statKey && condition.operator && condition.value !== "");
   if (activeConditions.length === 0) {
@@ -5386,7 +5395,7 @@ async function runDerivedAggregateQuery(
   const grouped = new Map<string, QueryRow & { __components: Record<string, number> }>();
 
   for (const row of result.results ?? []) {
-    const groupParts = grouping.columns.map((column) => String(column === "player" || column === "team" ? row.entity : row[column] ?? ""));
+    const groupParts = grouping.columns.map((column) => String(groupedSourceValue(row, column) ?? ""));
     const key = groupParts.join("|");
     const rowComponents = Object.fromEntries(
       recipe.components.map((component) => [component, Number(row[`comp_${component}`] ?? 0)])
@@ -5409,17 +5418,7 @@ async function runDerivedAggregateQuery(
 
     for (const column of grouping.columns) {
       if (column === "player" || column === "team") continue;
-      existing[column] = row[
-        column === "ground"
-          ? "venue_name"
-          : column === "opposition"
-            ? "opposition_name"
-            : column === "round"
-              ? "round_label"
-              : column === "club"
-                ? "club_name"
-                : column
-      ];
+      existing[column] = groupedSourceValue(row, column);
     }
     existing.first_season = Math.min(Number(existing.first_season ?? row.season), Number(row.season ?? 0));
     existing.last_season = Math.max(Number(existing.last_season ?? row.season), Number(row.season ?? 0));
@@ -12845,8 +12844,10 @@ const applicationWorker = {
           includeGrandFinal: url.searchParams.get("includeGrandFinal") !== "0",
           conditions: normalizeConditions(conditions),
         };
-        const queryLimit = singleEntityResults && format === "match" && mode !== "streaks"
-          ? Math.min(5000, Math.max(requestedLimit * 4, requestedLimit))
+        const queryLimit = singleEntityResults && format !== "overall" && mode !== "streaks"
+          ? (format === "match"
+              ? Math.min(5000, Math.max(requestedLimit * 4, requestedLimit))
+              : 5000)
           : requestedLimit;
         const payload = await runLeaderboardQuery(
           env.DB,
