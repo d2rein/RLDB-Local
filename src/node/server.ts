@@ -151,7 +151,7 @@ function startQueryWorker() {
   queryWorker = worker;
 
   worker.on("message", (message: { type: string } | SerializedResponse) => {
-    if ("type" in message && message.type === "ready") {
+    if ("type" in message && (message.type === "ready" || message.type === "ready_for_next")) {
       workerReady = true;
       dispatchNext();
       return;
@@ -175,7 +175,6 @@ function startQueryWorker() {
       }
       outgoing.end(Buffer.from(message.body));
     }
-    dispatchNext();
   });
 
   worker.on("error", (error) => {
@@ -194,6 +193,7 @@ function dispatchNext() {
   if (!workerReady || !queryWorker || activeRequest || requestQueue.length === 0) return;
   activeRequest = requestQueue.shift() || null;
   if (!activeRequest) return;
+  workerReady = false;
   queryWorker.postMessage(activeRequest.request);
 }
 
