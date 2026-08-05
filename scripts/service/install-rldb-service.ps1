@@ -118,7 +118,37 @@ foreach ($competition in @("NRL", "NRLW")) {
     Copy-Item -LiteralPath (Join-Path $sourceDirectory "${competition}_player_statistics_2026.json") -Destination $destinationDirectory
   }
 }
-& $nodePath (Join-Path $releaseRoot "scripts\apply-application-migrations.mjs") $databasePath
+
+# DatabaseSync.close() can wait indefinitely when the running candidate still
+# owns SQLite resources. Quiesce only the candidate before applying migrations;
+# the operational service on 8797 remains untouched.
+$candidateQuiescedForMigration = $false
+$existingTaskBeforeMigration = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+if ($existingTaskBeforeMigration) {
+  Write-Host "Stopping the existing candidate before database migrations..."
+  Stop-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+  for ($attempt = 1; $attempt -le 30; $attempt += 1) {
+    $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+    if (-not $listener) { break }
+    Start-Sleep -Seconds 1
+  }
+  if (Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue) {
+    throw "The candidate did not stop before database migrations."
+  }
+  $candidateQuiescedForMigration = $true
+}
+
+try {
+  & $nodePath (Join-Path $releaseRoot "scripts\apply-application-migrations.mjs") $databasePath
+  if ($LASTEXITCODE -ne 0) {
+    throw "Application migrations exited with code $LASTEXITCODE."
+  }
+} catch {
+  if ($candidateQuiescedForMigration) {
+    Start-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+  }
+  throw
+}
 
 $existingConfigPath = Join-Path $paths.Config "service.json"
 $existingConfig = if (Test-Path -LiteralPath $existingConfigPath) {
@@ -269,15 +299,17 @@ if (-not $existingTask) {
 } else {
   Write-Host "Retaining existing scheduled-task credentials."
   Write-Host "Restarting the existing candidate task to load the new release."
-  Stop-ScheduledTask -TaskName $TaskName -ErrorAction Stop
-  for ($attempt = 1; $attempt -le 30; $attempt += 1) {
-    $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
-    if (-not $listener) { break }
-    Start-Sleep -Seconds 1
-  }
-  $staleListener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
-  if ($staleListener) {
-    throw "The previous candidate process did not stop listening on port $BackendPort."
+  if (-not $candidateQuiescedForMigration) {
+    Stop-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+    for ($attempt = 1; $attempt -le 30; $attempt += 1) {
+      $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+      if (-not $listener) { break }
+      Start-Sleep -Seconds 1
+    }
+    $staleListener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+    if ($staleListener) {
+      throw "The previous candidate process did not stop listening on port $BackendPort."
+    }
   }
 }
 Start-ScheduledTask -TaskName $TaskName -ErrorAction Stop
