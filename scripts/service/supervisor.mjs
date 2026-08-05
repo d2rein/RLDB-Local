@@ -49,7 +49,7 @@ const services = [
   },
   {
     name: "backend",
-    arguments: ["--expose-gc", path.join(config.releaseRoot, "dist", "server.mjs")],
+    script: path.join(config.releaseRoot, "dist", "server.mjs"),
     environment: {
       RLDB_HOST: "127.0.0.1",
       RLDB_PORT: String(config.backendPort),

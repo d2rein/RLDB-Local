@@ -156,6 +156,10 @@ function startQueryWorker() {
       dispatchNext();
       return;
     }
+    if ("type" in message && message.type === "recycle_after_response") {
+      recycleIdleQueryWorker(worker);
+      return;
+    }
     if ("type" in message) return;
     if (!activeRequest || message.id !== activeRequest.request.id) return;
 
@@ -207,6 +211,15 @@ function restartQueryWorker(reason: string) {
   if (!shuttingDown) startQueryWorker();
 }
 
+function recycleIdleQueryWorker(worker: Worker) {
+  if (queryWorker !== worker || activeRequest) return;
+  queryWorker = null;
+  workerReady = false;
+  console.info(JSON.stringify({ event: "rldb_query_worker_recycle" }));
+  void worker.terminate();
+  if (!shuttingDown) startQueryWorker();
+}
+
 function failActiveRequest(error: Error) {
   if (!activeRequest) return;
   const { outgoing } = activeRequest;
@@ -215,7 +228,11 @@ function failActiveRequest(error: Error) {
 }
 
 function writeHealthResponse(outgoing: http.ServerResponse) {
-  const healthy = Boolean(queryWorker && workerReady);
+  // A worker processing a query is healthy even though it is not ready to
+  // accept the next queued request. Only report unavailable while no worker
+  // exists, or while a replacement worker has not completed startup.
+  const busy = Boolean(activeRequest);
+  const healthy = Boolean(queryWorker && (workerReady || busy));
   outgoing.writeHead(healthy ? 200 : 503, {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store",
@@ -226,7 +243,7 @@ function writeHealthResponse(outgoing: http.ServerResponse) {
     database: { configured: true, reachable: healthy },
     query_worker: {
       ready: workerReady,
-      busy: Boolean(activeRequest),
+      busy,
       queued_requests: requestQueue.length,
     },
     checked_at_utc: new Date().toISOString(),

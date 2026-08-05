@@ -84,14 +84,14 @@ parentPort?.on("message", async (message: SerializedRequest) => {
   if (shouldMaintain) {
     try {
       await settleBackgroundTasksBounded();
-      const collectGarbage = (globalThis as typeof globalThis & { gc?: () => void }).gc;
-      collectGarbage?.();
     } catch (error) {
       console.warn(JSON.stringify({
         event: "rldb_query_worker_maintenance_failed",
         error: error instanceof Error ? error.message : String(error),
       }));
     }
+    parentPort?.postMessage({ type: "recycle_after_response" });
+    return;
   }
   parentPort?.postMessage({ type: "ready_for_next" });
 });
