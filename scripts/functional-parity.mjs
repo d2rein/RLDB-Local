@@ -139,22 +139,42 @@ async function authenticate(origin) {
 }
 
 function normalizeForComparison(name, value) {
-  if (name !== "bootstrap" || !value?.filterOptions) return value;
+  const normalized = normalizeRuntimeFields(value);
+  if (name !== "bootstrap" || !normalized?.filterOptions) return normalized;
   return {
-    ...value,
-    app: value.app
+    ...normalized,
+    app: normalized.app
       ? {
-          ...value.app,
+          ...normalized.app,
           // This describes the host implementation, not the underlying data.
           status: "normalized-runtime-status",
         }
-      : value.app,
+      : normalized.app,
     filterOptions: {
-      ...value.filterOptions,
+      ...normalized.filterOptions,
       // Both complete player lists are compared through /api/meta/players.
       players: [],
     },
   };
+}
+
+function normalizeRuntimeFields(value, key = "") {
+  if (typeof value === "string" && key.endsWith("_json")) {
+    try {
+      return normalizeRuntimeFields(JSON.parse(value), key.slice(0, -5));
+    } catch {
+      return value;
+    }
+  }
+  if (Array.isArray(value)) return value.map((item) => normalizeRuntimeFields(item));
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([childKey]) => !["summary", "generatedAtUtc", "durationMs", "requestId"].includes(childKey))
+        .map(([childKey, childValue]) => [childKey, normalizeRuntimeFields(childValue, childKey)])
+    );
+  }
+  return value;
 }
 
 function canonical(value) {
