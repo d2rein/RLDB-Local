@@ -79,10 +79,15 @@ function compare(name, expected, actual) {
     );
     if (difference) {
       console.log(`  first difference at ${difference.path}`);
-      console.log(`  operational=${JSON.stringify(difference.expected).slice(0, 500)}`);
-      console.log(`  candidate=${JSON.stringify(difference.actual).slice(0, 500)}`);
+      console.log(`  operational=${formatDifferenceValue(difference.expected)}`);
+      console.log(`  candidate=${formatDifferenceValue(difference.actual)}`);
     }
   }
+}
+
+function formatDifferenceValue(value) {
+  const serialized = JSON.stringify(value);
+  return (serialized === undefined ? String(value) : serialized).slice(0, 500);
 }
 
 async function fetchJson(url) {
