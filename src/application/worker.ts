@@ -3370,6 +3370,179 @@ async function runPlayerAggregateFastPath(
   };
 }
 
+async function runPlayerConditionalAggregateFastPath(
+  db: D1Database,
+  statKey: string,
+  limit: number,
+  mode: string,
+  format: string,
+  seasonFrom: number,
+  seasonTo: number,
+  filters: QueryFilters
+): Promise<{
+  ok: boolean;
+  summary: string;
+  columns: string[];
+  rows: QueryRow[];
+} | null> {
+  if (filters.conditions.length === 0) return null;
+  if (!canUsePlayerAggregateFastPath({ ...filters, conditions: [] }, mode, format)) return null;
+  if (statKey === "games_played" && filters.conditions.some((condition) => condition.statKey === "minutes_played")) {
+    return null;
+  }
+
+  const sources = aggregateSourcesForCompetition(filters.competition);
+  if (!sources) return null;
+
+  const requestedStatKeys = new Set<string>();
+  const addStatKey = (candidate: string): void => {
+    if (!candidate || candidate === "games" || candidate === "games_included" || candidate === "games_played") return;
+    const recipe = getDerivedRecipe("player", candidate);
+    if (recipe) {
+      for (const component of recipe.components) addStatKey(component);
+      return;
+    }
+    requestedStatKeys.add(candidate);
+  };
+  addStatKey(statKey);
+  for (const condition of filters.conditions) addStatKey(condition.statKey);
+
+  // Tries is present for every imported player-season and provides the game-count anchor
+  // when the selected statistic is games played.
+  requestedStatKeys.add("tries");
+  const rawStatKeys = [...requestedStatKeys];
+  const playerFilterSql = filters.player !== "Any"
+    ? " AND COALESCE(p.display_name, a.player_name_raw) = ?"
+    : "";
+  const playerFilterBinds = filters.player !== "Any" ? [filters.player] : [];
+  const sql = `
+    SELECT
+      COALESCE(p.display_name, a.player_name_raw) AS player,
+      a.source,
+      a.season,
+      a.stat_key,
+      SUM(a.total_value) AS total_value,
+      SUM(a.recorded_games) AS recorded_games,
+      MAX(a.total_games) AS total_games,
+      MIN(COALESCE(a.first_season, a.season)) AS first_season,
+      MAX(COALESCE(a.last_season, a.season)) AS last_season
+    FROM player_stat_aggregates a
+    LEFT JOIN players p ON p.player_id = a.player_id
+    WHERE a.source IN (${sources.map(() => "?").join(", ")})
+      AND a.scope = 'season'
+      AND a.season BETWEEN ? AND ?
+      AND a.stat_key IN (${rawStatKeys.map(() => "?").join(", ")})
+      ${playerFilterSql}
+    GROUP BY COALESCE(p.display_name, a.player_name_raw), a.source, a.season, a.stat_key
+  `;
+  const result = await db.prepare(sql).bind(
+    ...sources,
+    seasonFrom,
+    seasonTo,
+    ...rawStatKeys,
+    ...playerFilterBinds,
+  ).all<QueryRow>();
+
+  type AggregateAccumulator = {
+    player: string;
+    season: number;
+    firstSeason: number;
+    lastSeason: number;
+    games: number;
+    totals: Record<string, number>;
+    recorded: Record<string, number>;
+  };
+  const sourceSeasons = new Map<string, AggregateAccumulator>();
+  for (const row of result.results ?? []) {
+    const player = String(row.player ?? "");
+    const source = String(row.source ?? "");
+    const season = Number(row.season ?? 0);
+    const key = `${player}\u0000${source}\u0000${season}`;
+    const accumulator = sourceSeasons.get(key) ?? {
+      player,
+      season,
+      firstSeason: Number(row.first_season ?? season),
+      lastSeason: Number(row.last_season ?? season),
+      games: 0,
+      totals: {},
+      recorded: {},
+    };
+    const rawStatKey = String(row.stat_key ?? "");
+    accumulator.games = Math.max(accumulator.games, Number(row.total_games ?? 0));
+    accumulator.firstSeason = Math.min(accumulator.firstSeason, Number(row.first_season ?? season));
+    accumulator.lastSeason = Math.max(accumulator.lastSeason, Number(row.last_season ?? season));
+    accumulator.totals[rawStatKey] = Number(row.total_value ?? 0);
+    accumulator.recorded[rawStatKey] = Number(row.recorded_games ?? 0);
+    sourceSeasons.set(key, accumulator);
+  }
+
+  const grouped = new Map<string, AggregateAccumulator>();
+  for (const sourceSeason of sourceSeasons.values()) {
+    const key = format === "season" ? `${sourceSeason.player}\u0000${sourceSeason.season}` : sourceSeason.player;
+    const accumulator = grouped.get(key) ?? {
+      player: sourceSeason.player,
+      season: sourceSeason.season,
+      firstSeason: sourceSeason.firstSeason,
+      lastSeason: sourceSeason.lastSeason,
+      games: 0,
+      totals: {},
+      recorded: {},
+    };
+    accumulator.games += sourceSeason.games;
+    accumulator.firstSeason = Math.min(accumulator.firstSeason, sourceSeason.firstSeason);
+    accumulator.lastSeason = Math.max(accumulator.lastSeason, sourceSeason.lastSeason);
+    for (const rawStatKey of rawStatKeys) {
+      accumulator.totals[rawStatKey] = Number(accumulator.totals[rawStatKey] ?? 0)
+        + Number(sourceSeason.totals[rawStatKey] ?? 0);
+      accumulator.recorded[rawStatKey] = Number(accumulator.recorded[rawStatKey] ?? 0)
+        + Number(sourceSeason.recorded[rawStatKey] ?? 0);
+    }
+    grouped.set(key, accumulator);
+  }
+
+  const requestedOutputKeys = new Set([statKey, ...filters.conditions.map((condition) => condition.statKey)]);
+  const rows = [...grouped.values()].map((accumulator): QueryRow => {
+    const row: QueryRow = {
+      player: accumulator.player,
+      ...(format === "season" ? { season: accumulator.season } : {}),
+      first_season: accumulator.firstSeason,
+      last_season: accumulator.lastSeason,
+      games: accumulator.games,
+      games_played: accumulator.games,
+    };
+    for (const rawStatKey of rawStatKeys) {
+      row[rawStatKey] = mode === "averages"
+        ? Math.round((accumulator.totals[rawStatKey] / Math.max(accumulator.recorded[rawStatKey], 1)) * 1000) / 1000
+        : Math.round(accumulator.totals[rawStatKey] * 1000) / 1000;
+    }
+    for (const outputStatKey of requestedOutputKeys) {
+      const recipe = getDerivedRecipe("player", outputStatKey);
+      if (!recipe) continue;
+      const values = Object.fromEntries(recipe.components.map((component) => [component, Number(row[component] ?? 0)]));
+      row[outputStatKey] = recipe.compute(values);
+    }
+    row.stat_total = statKey === "games_played" ? accumulator.games : Number(row[statKey] ?? 0);
+    row.included_games = statKey === "games_played"
+      ? accumulator.games
+      : Number(accumulator.recorded[statKey] ?? accumulator.games);
+    return row;
+  });
+
+  const filteredRows = applyAggregateConditions(rows, filters.conditions, statKey).sort((left, right) =>
+    Number(right.stat_total ?? 0) - Number(left.stat_total ?? 0)
+    || Number(right.included_games ?? 0) - Number(left.included_games ?? 0)
+    || String(left.player ?? "").localeCompare(String(right.player ?? ""))
+    || Number(left.season ?? 0) - Number(right.season ?? 0)
+  );
+  const grouping = groupingColumns("player", format);
+  return {
+    ok: true,
+    summary: `Top ${limit} players by ${mode === "averages" ? "average " : ""}${statKey.replace(/_/g, " ")} from ${seasonFrom} to ${seasonTo}${grouping.label !== "overall" ? ` by ${grouping.label}` : ""}. Used precomputed season aggregates with aggregate conditions.`,
+    columns: [...grouping.columns, "stat_total", "games", "included_games", "first_season", "last_season"],
+    rows: filteredRows.slice(0, limit),
+  };
+}
+
 function quotedIdentifier(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
@@ -5862,6 +6035,22 @@ async function runLeaderboardQuery(
   }
 
   if (scope === "player") {
+    const conditionalAggregateFastPath = mode !== "streaks"
+      ? await runPlayerConditionalAggregateFastPath(
+          db,
+          statKey,
+          limit,
+          mode,
+          format,
+          seasonFrom,
+          seasonTo,
+          filters,
+        )
+      : null;
+    if (conditionalAggregateFastPath) {
+      return conditionalAggregateFastPath;
+    }
+
     if (mode === "totals" && statKey === "games_played" && filters.conditions.length > 0) {
       const grouping = groupingColumns("player", format);
       const playerFilters = buildPlayerFilters({ ...filters, conditions: [] });
