@@ -90,8 +90,6 @@ parentPort?.on("message", async (message: SerializedRequest) => {
         error: error instanceof Error ? error.message : String(error),
       }));
     }
-    parentPort?.postMessage({ type: "recycle_after_response" });
-    return;
   }
   parentPort?.postMessage({ type: "ready_for_next" });
 });

@@ -156,10 +156,6 @@ function startQueryWorker() {
       dispatchNext();
       return;
     }
-    if ("type" in message && message.type === "recycle_after_response") {
-      recycleIdleQueryWorker(worker);
-      return;
-    }
     if ("type" in message) return;
     if (!activeRequest || message.id !== activeRequest.request.id) return;
 
@@ -208,15 +204,6 @@ function restartQueryWorker(reason: string) {
   failActiveRequest(new Error(`Query cancelled: ${reason}.`));
   console.warn(JSON.stringify({ event: "rldb_query_worker_restart", reason }));
   if (worker) void worker.terminate();
-  if (!shuttingDown) startQueryWorker();
-}
-
-function recycleIdleQueryWorker(worker: Worker) {
-  if (queryWorker !== worker || activeRequest) return;
-  queryWorker = null;
-  workerReady = false;
-  console.info(JSON.stringify({ event: "rldb_query_worker_recycle" }));
-  void worker.terminate();
   if (!shuttingDown) startQueryWorker();
 }
 
