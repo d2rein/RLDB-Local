@@ -4298,27 +4298,30 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
   const statValueSelects: string[] = [];
   const statIncludedSelects: string[] = [];
   const statAggregateSelects: string[] = [];
+  const statValueJoins: string[] = [];
   const statValueAliases = new Map<string, string>();
   const statIncludedAliases = new Map<string, string>();
-  const statValueBinds: unknown[] = [];
-  const statIncludedBinds: unknown[] = [];
 
-  for (const statKey of rawStatKeys) {
+  rawStatKeys.forEach((statKey, index) => {
     const valueAlias = quotedIdentifier(`v_${statKey}`);
     const includedAlias = quotedIdentifier(`i_${statKey}`);
+    const valueTableAlias = `psv_${index}`;
     statValueAliases.set(statKey, valueAlias);
     statIncludedAliases.set(statKey, includedAlias);
 
-    statValueSelects.push(`COALESCE(${playerStatNumericExpr("s", "?")}, 0) AS ${valueAlias}`);
-    statValueBinds.push(statKey);
+    statValueJoins.push(
+      `LEFT JOIN player_match_stat_values ${valueTableAlias}
+        ON ${valueTableAlias}.player_match_summary_id = s.player_match_summary_id
+       AND ${valueTableAlias}.stat_key = ${quotedSqlString(statKey)}`
+    );
+    statValueSelects.push(`COALESCE(${valueTableAlias}.stat_value_num, 0) AS ${valueAlias}`);
 
     if (missingStrategyForStat(statKey) === "zero_if_missing") {
       statIncludedSelects.push(`1 AS ${includedAlias}`);
     } else {
       statIncludedSelects.push(
-        `CASE WHEN s.season >= ${firstConsistentSeasonForStat(statKey)} THEN 1 WHEN ${playerStatPresentExpr("s", "?")} THEN 1 ELSE 0 END AS ${includedAlias}`
+        `CASE WHEN s.season >= ${firstConsistentSeasonForStat(statKey)} THEN 1 WHEN ${valueTableAlias}.stat_key IS NOT NULL THEN 1 ELSE 0 END AS ${includedAlias}`
       );
-      statIncludedBinds.push(statKey);
     }
 
     const statAlias = quotedIdentifier(statKey);
@@ -4327,7 +4330,7 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
         ? `ROUND(1.0 * SUM(${valueAlias}) / NULLIF(SUM(${includedAlias}), 0), 3) AS ${statAlias}`
         : `ROUND(SUM(${valueAlias}), 3) AS ${statAlias}`
     );
-  }
+  });
 
   const selectedValueAlias = selectedStatKey === "games_played"
     ? null
@@ -4345,8 +4348,6 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
     ? "COUNT(*)"
     : `SUM(${selectedIncludedAlias})`;
   const bindValues: unknown[] = [
-    ...statValueBinds,
-    ...statIncludedBinds,
     seasonFrom,
     seasonTo,
     ...playerFilters.binds,
@@ -4371,6 +4372,7 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
       JOIN teams tt ON tt.team_id = s.team_id
       LEFT JOIN teams ot ON ot.team_id = s.opponent_team_id
       LEFT JOIN venues v ON v.venue_id = m.venue_id
+      ${statValueJoins.join("\n      ")}
       WHERE s.season BETWEEN ? AND ?
       ${playerFilters.sql}
     )
@@ -4403,28 +4405,28 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
         1 AS games,
         ${selectedDirectIncludedExpr} AS included_games,
         season AS first_season,
-        season AS last_season${directStatSelects.length ? `,
+        season AS last_season,
+        COUNT(*) OVER() AS "__total_rows"${directStatSelects.length ? `,
         ${directStatSelects.join(",\n        ")}` : ""}
       FROM base
       ORDER BY ${quotedIdentifier(safeDirectSortColumn)} ${safeSortDirection}, player ASC
       LIMIT ? OFFSET ?
     `;
-    const countSql = `
-      ${baseSql}
-      SELECT COUNT(*) AS count
-      FROM base
-    `;
     const rowsResult = await db.prepare(sql).bind(...bindValues, pageSize, offset).all<QueryRow>();
-    const countResult = await db.prepare(countSql).bind(...bindValues).first<{ count: number }>();
-    const rows = (rowsResult.results ?? []).map((row) => ({
-      ...row,
-      games_played: row.games,
-    }));
+    const rawRows = rowsResult.results ?? [];
+    const totalRows = Number(rawRows[0]?.__total_rows ?? 0);
+    const rows = rawRows.map((row) => {
+      const { __total_rows, ...publicRow } = row;
+      return {
+        ...publicRow,
+        games_played: publicRow.games,
+      };
+    });
     return {
       ok: true,
       summary: `Loaded ${rows.length} player match rows directly from canonical match summaries with SQL paging.`,
       rows,
-      totalRows: Number(countResult?.count ?? 0),
+      totalRows,
     };
   }
 
@@ -4456,20 +4458,17 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
   const safeSortDirection = sortDirection === "asc" ? "ASC" : "DESC";
   const sql = `
     ${aggregateSql}
-    SELECT *
+    SELECT *, COUNT(*) OVER() AS "__total_rows"
     FROM aggregated
     ORDER BY ${quotedIdentifier(safeSortColumn === "games_played" ? "games" : safeSortColumn)} ${safeSortDirection}, player ASC
     LIMIT ? OFFSET ?
   `;
-  const countSql = `
-    ${aggregateSql}
-    SELECT COUNT(*) AS count
-    FROM aggregated
-  `;
   const rowsResult = await db.prepare(sql).bind(...bindValues, pageSize, offset).all<QueryRow>();
-  const countResult = await db.prepare(countSql).bind(...bindValues).first<{ count: number }>();
-  const rows = (rowsResult.results ?? []).map((row) => {
-    const hydrated: QueryRow = { ...row, games_played: row.games };
+  const rawRows = rowsResult.results ?? [];
+  const totalRows = Number(rawRows[0]?.__total_rows ?? 0);
+  const rows = rawRows.map((row) => {
+    const { __total_rows, ...publicRow } = row;
+    const hydrated: QueryRow = { ...publicRow, games_played: publicRow.games };
     for (const definition of statDefinitions) {
       if (definition.statKey === "games_played") {
         hydrated.games_played = hydrated.games ?? 0;
@@ -4489,7 +4488,7 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
     ok: true,
     summary: `Loaded ${rows.length} player ${format} aggregate rows for full-results from match summaries with SQL paging.`,
     rows,
-    totalRows: Number(countResult?.count ?? 0),
+    totalRows,
   };
 }
 
