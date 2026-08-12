@@ -3508,7 +3508,7 @@ async function runPlayerConditionalAggregateFastPath(
       first_season: accumulator.firstSeason,
       last_season: accumulator.lastSeason,
       games: accumulator.games,
-      games_played: accumulator.games,
+      ...(statKey === "games_played" ? {} : { games_played: accumulator.games }),
     };
     for (const rawStatKey of rawStatKeys) {
       row[rawStatKey] = mode === "averages"
