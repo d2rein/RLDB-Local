@@ -59,12 +59,29 @@ if ($production.StatusCode -ne 200) {
   throw "Operational health check failed before installation."
 }
 
+$nodePath = (Get-Command node.exe -ErrorAction Stop).Source
+$buildScript = Join-Path $SourceRoot "scripts\build.mjs"
+if (-not (Test-Path -LiteralPath $buildScript)) {
+  throw "Candidate build script not found: $buildScript"
+}
+
+Write-Host "Building candidate release..."
+& $nodePath $buildScript
+if ($LASTEXITCODE -ne 0) {
+  throw "Candidate build failed with exit code $LASTEXITCODE. Installation was not attempted."
+}
+foreach ($outputName in @("server.mjs", "request-worker.mjs")) {
+  $outputPath = Join-Path $SourceRoot "dist\$outputName"
+  if (-not (Test-Path -LiteralPath $outputPath)) {
+    throw "Candidate build did not produce required output: $outputPath"
+  }
+}
+
 $gitCommit = (& git -c "safe.directory=$SourceRoot" -C $SourceRoot rev-parse HEAD).Trim()
 if (-not $gitCommit) { throw "Unable to determine candidate Git commit." }
 $gitDirty = [bool](& git -c "safe.directory=$SourceRoot" -C $SourceRoot status --porcelain)
 $applicationVersion = "$gitCommit-$(if ($gitDirty) { 'dirty' } else { 'clean' })"
 $releaseRoot = Join-Path $InstallRoot "app\releases\$gitCommit"
-$nodePath = (Get-Command node.exe -ErrorAction Stop).Source
 $paths = @{
   App = Join-Path $InstallRoot "app"
   Release = $releaseRoot
