@@ -4299,29 +4299,24 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
   const statValueSelects: string[] = [];
   const statIncludedSelects: string[] = [];
   const statAggregateSelects: string[] = [];
-  const statValueJoins: string[] = [];
   const statValueAliases = new Map<string, string>();
   const statIncludedAliases = new Map<string, string>();
 
-  rawStatKeys.forEach((statKey, index) => {
+  rawStatKeys.forEach((statKey) => {
     const valueAlias = quotedIdentifier(`v_${statKey}`);
     const includedAlias = quotedIdentifier(`i_${statKey}`);
-    const valueTableAlias = `psv_${index}`;
+    const jsonPath = quotedSqlString(statJsonPath(statKey));
+    const jsonValue = `json_extract(s.stats_json, ${jsonPath})`;
     statValueAliases.set(statKey, valueAlias);
     statIncludedAliases.set(statKey, includedAlias);
 
-    statValueJoins.push(
-      `LEFT JOIN player_match_stat_values ${valueTableAlias}
-        ON ${valueTableAlias}.player_match_summary_id = s.player_match_summary_id
-       AND ${valueTableAlias}.stat_key = ${quotedSqlString(statKey)}`
-    );
-    statValueSelects.push(`COALESCE(${valueTableAlias}.stat_value_num, 0) AS ${valueAlias}`);
+    statValueSelects.push(`COALESCE(CAST(${jsonValue} AS REAL), 0) AS ${valueAlias}`);
 
     if (missingStrategyForStat(statKey) === "zero_if_missing") {
       statIncludedSelects.push(`1 AS ${includedAlias}`);
     } else {
       statIncludedSelects.push(
-        `CASE WHEN s.season >= ${firstConsistentSeasonForStat(statKey)} THEN 1 WHEN ${valueTableAlias}.stat_key IS NOT NULL THEN 1 ELSE 0 END AS ${includedAlias}`
+        `CASE WHEN s.season >= ${firstConsistentSeasonForStat(statKey)} THEN 1 WHEN json_type(s.stats_json, ${jsonPath}) IS NOT NULL THEN 1 ELSE 0 END AS ${includedAlias}`
       );
     }
 
@@ -4373,7 +4368,6 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
       JOIN teams tt ON tt.team_id = s.team_id
       LEFT JOIN teams ot ON ot.team_id = s.opponent_team_id
       LEFT JOIN venues v ON v.venue_id = m.venue_id
-      ${statValueJoins.join("\n      ")}
       WHERE s.season BETWEEN ? AND ?
       ${playerFilters.sql}
     )
