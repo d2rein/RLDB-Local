@@ -4242,6 +4242,7 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
   sortColumn: string,
   sortDirection: "asc" | "desc",
   allowConditionBypass = false,
+  topRowPerGroup = false,
 ): Promise<{ ok: true; summary: string; rows: QueryRow[]; totalRows: number } | null> {
   if (!canUsePlayerMatchAggregatePagedPath(filters, mode, format, statDefinitions, selectedStatKey, sortColumn, allowConditionBypass)) {
     return null;
@@ -4456,10 +4457,25 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
     ...rawStatKeys,
   ].includes(sortColumn) ? sortColumn : "stat_total";
   const safeSortDirection = sortDirection === "asc" ? "ASC" : "DESC";
+  const groupPartitionColumns = groupingColumnsList.slice(1);
+  const useGroupedRanking = topRowPerGroup && groupPartitionColumns.length > 0;
+  const rankedSql = useGroupedRanking
+    ? `,
+    ranked AS (
+      SELECT
+        *,
+        ROW_NUMBER() OVER (
+          PARTITION BY ${groupPartitionColumns.map(quotedIdentifier).join(", ")}
+          ORDER BY stat_total DESC, included_games DESC, player ASC
+        ) AS "__group_rank"
+      FROM aggregated
+    )`
+    : "";
   const sql = `
-    ${aggregateSql}
+    ${aggregateSql}${rankedSql}
     SELECT *, COUNT(*) OVER() AS "__total_rows"
-    FROM aggregated
+    FROM ${useGroupedRanking ? "ranked" : "aggregated"}
+    ${useGroupedRanking ? 'WHERE "__group_rank" = 1' : ""}
     ORDER BY ${quotedIdentifier(safeSortColumn === "games_played" ? "games" : safeSortColumn)} ${safeSortDirection}, player ASC
     LIMIT ? OFFSET ?
   `;
@@ -4467,7 +4483,7 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
   const rawRows = rowsResult.results ?? [];
   const totalRows = Number(rawRows[0]?.__total_rows ?? 0);
   const rows = rawRows.map((row) => {
-    const { __total_rows, ...publicRow } = row;
+    const { __total_rows, __group_rank, ...publicRow } = row;
     const hydrated: QueryRow = { ...publicRow, games_played: publicRow.games };
     for (const definition of statDefinitions) {
       if (definition.statKey === "games_played") {
@@ -5861,7 +5877,8 @@ async function runLeaderboardQuery(
   allowMultipleStreaks: boolean,
   seasonFrom: number,
   seasonTo: number,
-  filters: QueryFilters
+  filters: QueryFilters,
+  singleEntityResults = true,
 ): Promise<{
   ok: boolean;
   summary: string;
@@ -6157,7 +6174,8 @@ async function runLeaderboardQuery(
             0,
             "stat_total",
             "desc",
-            true
+            true,
+            singleEntityResults && filters.conditions.length === 0 && format !== "overall"
           );
         })()
       : null;
@@ -13033,10 +13051,8 @@ const applicationWorker = {
           includeGrandFinal: url.searchParams.get("includeGrandFinal") !== "0",
           conditions: normalizeConditions(conditions),
         };
-        const queryLimit = singleEntityResults && format !== "overall" && mode !== "streaks"
-          ? (format === "match"
-              ? Math.min(5000, Math.max(requestedLimit * 4, requestedLimit))
-              : 5000)
+        const queryLimit = singleEntityResults && format !== "overall" && mode !== "streaks" && filters.conditions.length > 0
+          ? Math.min(50000, Math.max(requestedLimit * 50, 5000))
           : requestedLimit;
         const payload = await runLeaderboardQuery(
           env.DB,
@@ -13048,7 +13064,8 @@ const applicationWorker = {
           allowMultipleStreaks,
           seasonFrom,
           seasonTo,
-          filters
+          filters,
+          singleEntityResults
         );
         const collapsedRows = payload.ok && mode !== "streaks" && singleEntityResults && (scope === "player" || scope === "team")
           ? collapseToSingleResultPerEntity(payload.rows, scope as "player" | "team", format, "stat_total", "desc").slice(0, requestedLimit)
@@ -13187,7 +13204,8 @@ const applicationWorker = {
             true,
             seasonFrom,
             seasonTo,
-            filters
+            filters,
+            false
           );
           if (!streakPayload.ok) {
             return json(streakPayload, { status: 501, headers: { "cache-control": "no-store" } });
@@ -13239,7 +13257,8 @@ const applicationWorker = {
             false,
             seasonFrom,
             seasonTo,
-            filters
+            filters,
+            false
           );
           if (!marginPayload.ok) {
             return json(marginPayload, { status: 501, headers: { "cache-control": "no-store" } });
@@ -13285,7 +13304,8 @@ const applicationWorker = {
             false,
             seasonFrom,
             seasonTo,
-            filters
+            filters,
+            false
           );
           if (!teamPayload.ok) {
             return json(teamPayload, { status: 501, headers: { "cache-control": "no-store" } });
