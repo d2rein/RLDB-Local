@@ -3282,7 +3282,8 @@ async function runPlayerAggregateFastPath(
   format: string,
   seasonFrom: number,
   seasonTo: number,
-  filters: QueryFilters
+  filters: QueryFilters,
+  singleEntityResults = true,
 ): Promise<{
   ok: boolean;
   summary: string;
@@ -3329,6 +3330,7 @@ async function runPlayerAggregateFastPath(
   `);
   binds.push(...sources, statKey, aggregateSeasonFrom, aggregateSeasonTo);
 
+  const rankSeasonRows = singleEntityResults && format === "season";
   const sql = `
     WITH source AS (
       ${parts.join("\n      UNION ALL\n")}
@@ -3338,7 +3340,8 @@ async function runPlayerAggregateFastPath(
       FROM source
       WHERE total_value IS NOT NULL
       ${playerFilterSql}
-    )
+    ),
+    aggregated AS (
     SELECT
       ${groupSelect.replace("player_name", "player_name AS player")},
       MIN(first_season) AS first_season,
@@ -3348,6 +3351,19 @@ async function runPlayerAggregateFastPath(
       ${statExpr} AS stat_total
     FROM filtered
     GROUP BY ${groupBy}
+    )${rankSeasonRows ? `,
+    ranked AS (
+      SELECT
+        *,
+        ROW_NUMBER() OVER (
+          PARTITION BY season
+          ORDER BY stat_total DESC, included_games DESC, player ASC
+        ) AS "__group_rank"
+      FROM aggregated
+    )` : ""}
+    SELECT *
+    FROM ${rankSeasonRows ? "ranked" : "aggregated"}
+    ${rankSeasonRows ? 'WHERE "__group_rank" = 1' : ""}
     ORDER BY ${orderBy}
     LIMIT ?
   `;
@@ -3355,7 +3371,8 @@ async function runPlayerAggregateFastPath(
   const grouping = groupingColumns("player", format);
   const selectedDefinition = getStatDefinition("player", statKey);
   const rows = (result.results ?? []).map((row) => {
-    const hydrated: QueryRow = { ...row };
+    const { __group_rank, ...publicRow } = row;
+    const hydrated: QueryRow = { ...publicRow };
     if (!selectedDefinition?.isDerived) {
       hydrated.games_played = row.games;
       hydrated[statKey] = row.stat_total;
@@ -5525,7 +5542,8 @@ async function runDerivedAggregateQuery(
   format: string,
   seasonFrom: number,
   seasonTo: number,
-  filters: QueryFilters
+  filters: QueryFilters,
+  singleEntityResults = true,
 ): Promise<{ ok: boolean; summary: string; columns: string[]; rows: QueryRow[] }> {
   const recipe = getDerivedRecipe(scope, statKey);
   const definition = getStatDefinition(scope, statKey);
@@ -5630,8 +5648,8 @@ async function runDerivedAggregateQuery(
   const filtered = applyAggregateConditions(rows, filters.conditions, statKey)
     .filter((row) => row.stat_total !== null)
     .sort((left, right) => Number(right.stat_total ?? 0) - Number(left.stat_total ?? 0) || Number(right.included_games ?? 0) - Number(left.included_games ?? 0));
-  const finalRows = format === "club" && scope === "player"
-    ? reduceToTopClubRows(filtered, "player")
+  const finalRows = singleEntityResults && format !== "overall"
+    ? collapseToSingleResultPerEntity(filtered, scope, format, "stat_total", "desc")
     : filtered;
 
   return {
@@ -6136,7 +6154,8 @@ async function runLeaderboardQuery(
       format,
       seasonFrom,
       seasonTo,
-      filters
+      filters,
+      singleEntityResults
     );
     if (aggregateFastPath) {
       return aggregateFastPath;
@@ -6189,7 +6208,7 @@ async function runLeaderboardQuery(
       };
     }
     if (getDerivedRecipe("player", statKey)) {
-      return runDerivedAggregateQuery(db, "player", statKey, limit, mode, format, seasonFrom, seasonTo, filters);
+      return runDerivedAggregateQuery(db, "player", statKey, limit, mode, format, seasonFrom, seasonTo, filters, singleEntityResults);
     }
     const playerGamesPlayedStat = statKey === "games_played";
     const playerFilters = buildPlayerFilters(filters);
@@ -13045,8 +13064,12 @@ const applicationWorker = {
           includeGrandFinal: url.searchParams.get("includeGrandFinal") !== "0",
           conditions: normalizeConditions(conditions),
         };
-        const queryLimit = singleEntityResults && format !== "overall" && mode !== "streaks" && filters.conditions.length > 0
-          ? Math.min(50000, Math.max(requestedLimit * 50, 5000))
+        const queryLimit = singleEntityResults && format !== "overall" && mode !== "streaks"
+          ? (scope === "player" && filters.conditions.length === 0
+              ? requestedLimit
+              : format === "match"
+                ? Math.min(5000, Math.max(requestedLimit * 4, requestedLimit))
+                : 5000)
           : requestedLimit;
         const payload = await runLeaderboardQuery(
           env.DB,
