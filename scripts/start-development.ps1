@@ -65,7 +65,7 @@ if (-not $telemetryPid) {
       RLDB_TELEMETRY_PORT = $TelemetryPort
       RLDB_TELEMETRY_DB_PATH = $telemetryDatabasePath
       RLDB_APPLICATION_VERSION = "direct-node-development"
-      RLDB_SCHEMA_VERSION = "0008_team_opponent_lookup"
+      RLDB_SCHEMA_VERSION = "0009_player_match_query_components"
     } `
     -StdoutPath (Join-Path $logRoot "telemetry.out.log") `
     -StderrPath (Join-Path $logRoot "telemetry.err.log")
@@ -82,7 +82,7 @@ if (-not $backendPid) {
       RLDB_DATABASE_PATH = $databasePath
       TELEMETRY_ENDPOINT = "http://127.0.0.1:$TelemetryPort/events"
       RLDB_APPLICATION_VERSION = "direct-node-development"
-      RLDB_SCHEMA_VERSION = "0008_team_opponent_lookup"
+      RLDB_SCHEMA_VERSION = "0009_player_match_query_components"
       RLDB_RUNTIME_MODE = "development"
     } `
     -StdoutPath (Join-Path $logRoot "backend.out.log") `

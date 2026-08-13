@@ -235,7 +235,7 @@ if ($tunnelRequested -and -not $sitePasswordHash) {
 }
 $serviceConfig = [ordered]@{
   applicationVersion = $applicationVersion
-  schemaVersion = "0008_team_opponent_lookup"
+  schemaVersion = "0009_player_match_query_components"
   releaseRoot = $releaseRoot
   nodePath = $nodePath
   databasePath = $databasePath

@@ -15,9 +15,33 @@ const migrationFiles = readdirSync(migrationsPath)
 const database = new DatabaseSync(databasePath);
 database.exec("PRAGMA busy_timeout = 10000");
 try {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS application_migrations (
+      migration_name TEXT PRIMARY KEY,
+      applied_at_utc TEXT NOT NULL
+    )
+  `);
+  const wasApplied = database.prepare(
+    "SELECT 1 FROM application_migrations WHERE migration_name = ? LIMIT 1",
+  );
+  const recordMigration = database.prepare(
+    "INSERT INTO application_migrations (migration_name, applied_at_utc) VALUES (?, ?)",
+  );
   for (const migrationFile of migrationFiles) {
-    database.exec(readFileSync(resolve(migrationsPath, migrationFile), "utf8"));
-    console.log(`Applied ${migrationFile}`);
+    if (wasApplied.get(migrationFile)) {
+      console.log(`Already applied ${migrationFile}`);
+      continue;
+    }
+    database.exec("BEGIN IMMEDIATE");
+    try {
+      database.exec(readFileSync(resolve(migrationsPath, migrationFile), "utf8"));
+      recordMigration.run(migrationFile, new Date().toISOString());
+      database.exec("COMMIT");
+      console.log(`Applied ${migrationFile}`);
+    } catch (error) {
+      database.exec("ROLLBACK");
+      throw error;
+    }
   }
 } finally {
   database.close();

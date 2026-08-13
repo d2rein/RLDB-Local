@@ -995,54 +995,67 @@ async function handleSiteLogin(request: Request, env: Env): Promise<Response> {
 const DERIVED_STAT_RECIPES: Record<string, Record<string, {
   components: string[];
   compute: (values: Record<string, number>) => number | null;
+  sqlCompute: (values: Record<string, string>) => string;
 }>> = {
   player: {
     points: {
       components: ["tries", "goals", "field_goals_1pt", "field_goals_2pt"],
       compute: (values) =>
         (values.tries * 4) + (values.goals * 2) + values.field_goals_1pt + (values.field_goals_2pt * 2),
+      sqlCompute: (values) =>
+        `((${values.tries}) * 4) + ((${values.goals}) * 2) + (${values.field_goals_1pt}) + ((${values.field_goals_2pt}) * 2)`,
     },
     goal_conversion_rate: {
       components: ["conversions_with_attempts", "conversion_attempts"],
       compute: (values) => values.conversion_attempts > 0 ? (values.conversions_with_attempts * 100) / values.conversion_attempts : null,
+      sqlCompute: (values) => `CASE WHEN (${values.conversion_attempts}) > 0 THEN ((${values.conversions_with_attempts}) * 100.0) / (${values.conversion_attempts}) ELSE NULL END`,
     },
     average_play_the_ball_speed: {
       components: ["play_the_ball_total_seconds", "play_the_ball"],
       compute: (values) => values.play_the_ball > 0 ? values.play_the_ball_total_seconds / values.play_the_ball : null,
+      sqlCompute: (values) => `CASE WHEN (${values.play_the_ball}) > 0 THEN (${values.play_the_ball_total_seconds}) / (${values.play_the_ball}) ELSE NULL END`,
     },
     passes_to_run_ratio: {
       components: ["passes", "all_runs"],
       compute: (values) => values.all_runs > 0 ? values.passes / values.all_runs : null,
+      sqlCompute: (values) => `CASE WHEN (${values.all_runs}) > 0 THEN (${values.passes}) / (${values.all_runs}) ELSE NULL END`,
     },
     tackle_efficiency: {
       components: ["tackles_made", "tackle_attempts"],
       compute: (values) => values.tackle_attempts > 0 ? (values.tackles_made * 100) / values.tackle_attempts : null,
+      sqlCompute: (values) => `CASE WHEN (${values.tackle_attempts}) > 0 THEN ((${values.tackles_made}) * 100.0) / (${values.tackle_attempts}) ELSE NULL END`,
     },
   },
   team: {
     kick_defusal: {
       components: ["kick_defusal_weighted_numerator", "opposition_kicks"],
       compute: (values) => values.opposition_kicks > 0 ? values.kick_defusal_weighted_numerator / values.opposition_kicks : null,
+      sqlCompute: (values) => `CASE WHEN (${values.opposition_kicks}) > 0 THEN (${values.kick_defusal_weighted_numerator}) / (${values.opposition_kicks}) ELSE NULL END`,
     },
     average_play_the_ball_speed: {
       components: ["average_play_the_ball_speed_weighted_numerator", "opposition_tackles_made"],
       compute: (values) => values.opposition_tackles_made > 0 ? values.average_play_the_ball_speed_weighted_numerator / values.opposition_tackles_made : null,
+      sqlCompute: (values) => `CASE WHEN (${values.opposition_tackles_made}) > 0 THEN (${values.average_play_the_ball_speed_weighted_numerator}) / (${values.opposition_tackles_made}) ELSE NULL END`,
     },
     average_set_distance: {
       components: ["all_run_metres", "sets"],
       compute: (values) => values.sets > 0 ? values.all_run_metres / values.sets : null,
+      sqlCompute: (values) => `CASE WHEN (${values.sets}) > 0 THEN (${values.all_run_metres}) / (${values.sets}) ELSE NULL END`,
     },
     completion_rate: {
       components: ["completed_sets", "sets"],
       compute: (values) => values.sets > 0 ? (values.completed_sets * 100) / values.sets : null,
+      sqlCompute: (values) => `CASE WHEN (${values.sets}) > 0 THEN ((${values.completed_sets}) * 100.0) / (${values.sets}) ELSE NULL END`,
     },
     effective_tackle: {
       components: ["tackles_made", "tackle_attempts"],
       compute: (values) => values.tackle_attempts > 0 ? (values.tackles_made * 100) / values.tackle_attempts : null,
+      sqlCompute: (values) => `CASE WHEN (${values.tackle_attempts}) > 0 THEN ((${values.tackles_made}) * 100.0) / (${values.tackle_attempts}) ELSE NULL END`,
     },
     goal_conversion_rate: {
       components: ["conversions_with_attempts", "conversion_attempts"],
       compute: (values) => values.conversion_attempts > 0 ? (values.conversions_with_attempts * 100) / values.conversion_attempts : null,
+      sqlCompute: (values) => `CASE WHEN (${values.conversion_attempts}) > 0 THEN ((${values.conversions_with_attempts}) * 100.0) / (${values.conversion_attempts}) ELSE NULL END`,
     },
   },
 };
@@ -5533,6 +5546,154 @@ function buildTeamSeasonPresenceFilters(filters: QueryFilters): { sql: string; b
   };
 }
 
+const PLAYER_MATCH_QUERY_COMPONENT_COLUMNS = new Set([
+  "tries",
+  "goals",
+  "field_goals_1pt",
+  "field_goals_2pt",
+  "conversions_with_attempts",
+  "conversion_attempts",
+  "play_the_ball_total_seconds",
+  "play_the_ball",
+  "passes",
+  "all_runs",
+  "tackles_made",
+  "tackle_attempts",
+  "minutes_played",
+]);
+
+function playerQueryStatExpression(
+  statKey: string,
+  summaryAlias = "s",
+  componentAlias = "d",
+): { sql: string; binds: unknown[] } {
+  if (PLAYER_MATCH_QUERY_COMPONENT_COLUMNS.has(statKey)) {
+    return { sql: `${componentAlias}.${quotedIdentifier(statKey)}`, binds: [] };
+  }
+  return {
+    sql: `COALESCE(${playerStatNumericExpr(summaryAlias, "?")}, 0)`,
+    binds: [statKey],
+  };
+}
+
+async function runSqlDerivedAggregateQuery(
+  db: D1Database,
+  scope: "player" | "team",
+  statKey: string,
+  limit: number,
+  mode: string,
+  format: string,
+  seasonFrom: number,
+  seasonTo: number,
+  filters: QueryFilters,
+  singleEntityResults: boolean,
+): Promise<{ ok: boolean; summary: string; columns: string[]; rows: QueryRow[] } | null> {
+  const recipe = getDerivedRecipe(scope, statKey);
+  // Team derived stats use a different component model. Keep their established
+  // path until they have an equivalent compact projection.
+  if (scope !== "player" || !recipe || filters.conditions.length > 0 || !["totals", "averages"].includes(mode)) return null;
+  if (!["overall", "season", "club", "ground", "opposition", "match"].includes(format)) return null;
+
+  const grouping = groupingColumns(scope, format);
+  const filterBundle = buildPlayerFilters(filters);
+  const componentAliases = Object.fromEntries(recipe.components.map((component) => [component, `component_${component}`]));
+  const componentValueSelects = recipe.components.map((component) => {
+    return `d.${quotedIdentifier(component)} AS ${quotedIdentifier(componentAliases[component])}`;
+  });
+  const componentSumSelects = recipe.components.map((component) =>
+    `SUM(${quotedIdentifier(componentAliases[component])}) AS ${quotedIdentifier(componentAliases[component])}`
+  );
+  const aggregateComponentExprs = Object.fromEntries(recipe.components.map((component) => [
+    component,
+    quotedIdentifier(componentAliases[component]),
+  ]));
+  const rowComponentExprs = Object.fromEntries(recipe.components.map((component) => [
+    component,
+    `d.${quotedIdentifier(component)}`,
+  ]));
+  const aggregateDerivedExpr = recipe.sqlCompute(aggregateComponentExprs);
+  const rowDerivedExpr = recipe.sqlCompute(rowComponentExprs);
+  const entityName = "player_name";
+  const entitySelect = `COALESCE(p.display_name, s.player_name_raw) AS ${entityName}`;
+  const clubSelect = "tt.canonical_name AS club_name,";
+  const rankPartitionColumn =
+    format === "season" ? "season" :
+    format === "club" ? "club" :
+    format === "ground" ? "ground" :
+    format === "opposition" ? "opposition" :
+    format === "match" ? "match_id" : null;
+  const rankRows = singleEntityResults && rankPartitionColumn !== null;
+  const sql = `
+    WITH base AS (
+      SELECT
+        ${entitySelect},
+        s.season,
+        s.match_id,
+        m.round_label,
+        ${clubSelect}
+        COALESCE(ot.canonical_name, 'Unknown') AS opposition_name,
+        COALESCE(v.canonical_name, 'Unknown') AS venue_name,
+        COALESCE(m.match_date_local_text, s.match_date_utc, m.match_date_utc) AS match_reference,
+        ${matchSortKeySql("COALESCE(s.match_date_utc, m.match_date_utc)", "m.match_date_local_text")} AS match_sort_key,
+        ${componentValueSelects.join(",\n        ")},
+        CASE WHEN (${rowDerivedExpr}) IS NULL THEN 0 ELSE 1 END AS included_flag
+      FROM player_match_summary s
+      JOIN player_match_query_components d
+        ON d.player_match_summary_id = s.player_match_summary_id
+      LEFT JOIN players p ON p.player_id = s.player_id
+      JOIN matches m ON m.match_id = s.match_id
+      JOIN competitions c ON c.competition_id = m.competition_id
+      JOIN teams tt ON tt.team_id = s.team_id
+      LEFT JOIN teams ot ON ot.team_id = s.opponent_team_id
+      LEFT JOIN venues v ON v.venue_id = m.venue_id
+      WHERE s.season BETWEEN ? AND ?
+      ${filterBundle.sql}
+    ), component_totals AS (
+      SELECT
+        ${grouping.select.join(", ")},
+        ${componentSumSelects.join(",\n        ")},
+        COUNT(*) AS games,
+        SUM(included_flag) AS included_games,
+        MIN(season) AS first_season,
+        MAX(season) AS last_season
+      FROM base
+      GROUP BY ${grouping.groupBy.join(", ")}
+    ), scored AS (
+      SELECT
+        *,
+        ROUND(${aggregateDerivedExpr}, 3) AS stat_total
+      FROM component_totals
+    )${rankRows ? `,
+    ranked AS (
+      SELECT
+        *,
+        ROW_NUMBER() OVER (
+          PARTITION BY ${quotedIdentifier(rankPartitionColumn)}
+          ORDER BY stat_total DESC, included_games DESC, ${scope} ASC
+        ) AS "__group_rank"
+      FROM scored
+      WHERE stat_total IS NOT NULL
+    )` : ""}
+    SELECT *
+    FROM ${rankRows ? "ranked" : "scored"}
+    WHERE stat_total IS NOT NULL${rankRows ? ` AND "__group_rank" = 1` : ""}
+    ORDER BY stat_total DESC, included_games DESC, ${scope} ASC
+    LIMIT ?
+  `;
+  const result = await db.prepare(sql).bind(seasonFrom, seasonTo, ...filterBundle.binds, limit).all<QueryRow>();
+  const rows = (result.results ?? []).map((row) => {
+    const { __group_rank, ...publicRow } = row;
+    for (const component of recipe.components) delete publicRow[componentAliases[component]];
+    return publicRow;
+  });
+  return {
+    ok: true,
+    summary: `Top ${limit} ${scope === "player" ? "players" : "teams"} by ${statKey.replace(/_/g, " ")} from ${seasonFrom} to ${seasonTo}${grouping.label !== "overall" ? ` by ${grouping.label}` : ""}. Derived components grouped and ranked in SQLite.`,
+    columns: [...grouping.columns, "stat_total", "games", "included_games", "first_season", "last_season"],
+    rows,
+  };
+}
+
 async function runDerivedAggregateQuery(
   db: D1Database,
   scope: "player" | "team",
@@ -5550,6 +5711,20 @@ async function runDerivedAggregateQuery(
   if (!recipe || !definition) {
     return { ok: false, summary: "", columns: [], rows: [] };
   }
+
+  const sqlPayload = await runSqlDerivedAggregateQuery(
+    db,
+    scope,
+    statKey,
+    limit,
+    mode,
+    format,
+    seasonFrom,
+    seasonTo,
+    filters,
+    singleEntityResults,
+  );
+  if (sqlPayload) return sqlPayload;
 
   const grouping = groupingColumns(scope, format);
   const filterBundle = scope === "player" ? buildPlayerFilters(filters) : buildTeamFilters(filters);
@@ -5917,17 +6092,19 @@ async function runLeaderboardQuery(
     const matchConditionBinds: unknown[] = [];
     conditionStatKeys.forEach((conditionStatKey, index) => {
       const baseAlias = quotedIdentifier(`condition_value_${index}`);
-      seasonConditionBaseSelects.push(`COALESCE(${playerStatNumericExpr("s", "?")}, 0) AS ${baseAlias}`);
+      const conditionValue = playerQueryStatExpression(conditionStatKey);
+      seasonConditionBaseSelects.push(`${conditionValue.sql} AS ${baseAlias}`);
       seasonConditionOuterSelects.push(`ROUND(SUM(${baseAlias}), 3) AS ${quotedIdentifier(conditionStatKey)}`);
-      seasonConditionBinds.push(conditionStatKey);
-      matchConditionSelects.push(`COALESCE(${playerStatNumericExpr("s", "?")}, 0) AS ${quotedIdentifier(conditionStatKey)}`);
-      matchConditionBinds.push(conditionStatKey);
+      seasonConditionBinds.push(...conditionValue.binds);
+      matchConditionSelects.push(`${conditionValue.sql} AS ${quotedIdentifier(conditionStatKey)}`);
+      matchConditionBinds.push(...conditionValue.binds);
     });
+    const selectedStatValue = playerQueryStatExpression(statKey);
     const minutesRawAlias = quotedIdentifier("minutes_played_raw_source");
     const minutesPresentAlias = quotedIdentifier("minutes_played_present_source");
     const seasonMinuteBaseSelects = [
-      `${playerStatNumericExpr("s", "'minutes_played'")} AS ${minutesRawAlias}`,
-      `CASE WHEN ${playerStatPresentExpr("s", "'minutes_played'")} THEN 1 ELSE 0 END AS ${minutesPresentAlias}`,
+      `d.minutes_played AS ${minutesRawAlias}`,
+      `d.minutes_played_present AS ${minutesPresentAlias}`,
     ];
     const seasonMinuteOuterSelects = [
       `ROUND(SUM(COALESCE(${minutesRawAlias}, 0)), 3) AS "minutes_played_raw"`,
@@ -5935,8 +6112,8 @@ async function runLeaderboardQuery(
     ];
     const seasonMinuteBinds: unknown[] = [];
     const matchMinuteSelects = [
-      `${playerStatNumericExpr("s", "'minutes_played'")} AS "minutes_played_raw"`,
-      `CASE WHEN ${playerStatPresentExpr("s", "'minutes_played'")} THEN 1 ELSE 0 END AS "minutes_played_present"`,
+      `d.minutes_played AS "minutes_played_raw"`,
+      `d.minutes_played_present AS "minutes_played_present"`,
     ];
     const matchMinuteBinds: unknown[] = [];
     const sql = format === "season" ? `
@@ -5946,9 +6123,10 @@ async function runLeaderboardQuery(
           s.season,
           s.round_index,
           s.match_date_utc,
-          COALESCE(${playerStatNumericExpr("s", "?")}, 0) AS stat_total,
+          ${selectedStatValue.sql} AS stat_total,
           1 AS included_games${seasonConditionBaseSelects.length || seasonMinuteBaseSelects.length ? `,\n          ${[...seasonConditionBaseSelects, ...seasonMinuteBaseSelects].join(",\n          ")}` : ""}
         FROM player_match_summary s
+        JOIN player_match_query_components d ON d.player_match_summary_id = s.player_match_summary_id
         LEFT JOIN players p ON p.player_id = s.player_id
         JOIN matches m ON m.match_id = s.match_id
         JOIN competitions c ON c.competition_id = m.competition_id
@@ -5982,9 +6160,10 @@ async function runLeaderboardQuery(
         COALESCE(m.match_date_local_text, s.match_date_utc, m.match_date_utc) AS match_reference,
         ${matchSortKeySql("COALESCE(s.match_date_utc, m.match_date_utc)", "m.match_date_local_text")} AS match_sort_key,
         ${playerStreakGroupExpr},
-        COALESCE(${playerStatNumericExpr("s", "?")}, 0) AS stat_total,
+        ${selectedStatValue.sql} AS stat_total,
         1 AS included_games${matchConditionSelects.length || matchMinuteSelects.length ? `,\n        ${[...matchConditionSelects, ...matchMinuteSelects].join(",\n        ")}` : ""}
       FROM player_match_summary s
+      JOIN player_match_query_components d ON d.player_match_summary_id = s.player_match_summary_id
       LEFT JOIN players p ON p.player_id = s.player_id
       JOIN matches m ON m.match_id = s.match_id
       JOIN competitions c ON c.competition_id = m.competition_id
@@ -5998,8 +6177,8 @@ async function runLeaderboardQuery(
     `;
 
     const streakBinds = format === "season"
-      ? [statKey, ...seasonConditionBinds, ...seasonMinuteBinds, seasonFrom, seasonTo, ...playerFilters.binds]
-      : [statKey, ...matchConditionBinds, ...matchMinuteBinds, seasonFrom, seasonTo, ...playerFilters.binds];
+      ? [...selectedStatValue.binds, ...seasonConditionBinds, ...seasonMinuteBinds, seasonFrom, seasonTo, ...playerFilters.binds]
+      : [...selectedStatValue.binds, ...matchConditionBinds, ...matchMinuteBinds, seasonFrom, seasonTo, ...playerFilters.binds];
     const result = await db.prepare(sql).bind(...streakBinds).all<{
       entity: string;
       season: number;
