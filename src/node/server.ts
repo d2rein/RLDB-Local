@@ -49,7 +49,6 @@ type SerializedResponse = {
 type QueuedRequest = {
   request: SerializedRequest;
   outgoing: http.ServerResponse;
-  disconnectWatch?: ReturnType<typeof setInterval>;
 };
 
 let queryWorker: Worker | null = null;
@@ -75,7 +74,6 @@ const server = http.createServer(async (incoming, outgoing) => {
 
     const cancel = () => {
       if (outgoing.writableEnded) return;
-      clearDisconnectWatch(queued);
       if (activeRequest === queued) {
         restartQueryWorker("client_disconnected");
       } else {
@@ -86,10 +84,6 @@ const server = http.createServer(async (incoming, outgoing) => {
     incoming.once("aborted", cancel);
     incoming.socket.once("close", cancel);
     outgoing.once("close", cancel);
-    queued.disconnectWatch = setInterval(() => {
-      if (incoming.destroyed || outgoing.destroyed || outgoing.socket?.destroyed) cancel();
-    }, 1000);
-    queued.disconnectWatch.unref();
     dispatchNext();
   } catch (error) {
     writeError(outgoing, error);
@@ -167,7 +161,6 @@ function startQueryWorker() {
     if (!activeRequest || message.id !== activeRequest.request.id) return;
 
     const { outgoing } = activeRequest;
-    clearDisconnectWatch(activeRequest);
     activeRequest = null;
     if (!outgoing.destroyed) {
       outgoing.statusCode = message.status;
@@ -218,15 +211,8 @@ function restartQueryWorker(reason: string) {
 function failActiveRequest(error: Error) {
   if (!activeRequest) return;
   const { outgoing } = activeRequest;
-  clearDisconnectWatch(activeRequest);
   activeRequest = null;
   if (!outgoing.destroyed) writeError(outgoing, error);
-}
-
-function clearDisconnectWatch(request: QueuedRequest) {
-  if (!request.disconnectWatch) return;
-  clearInterval(request.disconnectWatch);
-  request.disconnectWatch = undefined;
 }
 
 function writeHealthResponse(outgoing: http.ServerResponse) {
