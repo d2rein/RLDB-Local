@@ -3303,7 +3303,6 @@ async function runPlayerAggregateFastPath(
   columns: string[];
   rows: QueryRow[];
 } | null> {
-  if (statKey === "games_played") return null;
   const sources = aggregateSourcesForCompetition(filters.competition);
   if (!sources || !canUsePlayerAggregateFastPath(filters, mode, format)) return null;
 
@@ -3318,9 +3317,13 @@ async function runPlayerAggregateFastPath(
   const orderBy = format === "season"
     ? "stat_total DESC, included_games DESC, player ASC, season ASC"
     : "stat_total DESC, included_games DESC, player ASC";
-  const statExpr = mode === "averages"
-    ? "ROUND(1.0 * SUM(total_value) / NULLIF(SUM(recorded_games), 0), 3)"
-    : "ROUND(SUM(total_value), 3)";
+  const gamesPlayedStat = statKey === "games_played";
+  const aggregateStatKey = gamesPlayedStat ? "tries" : statKey;
+  const statExpr = gamesPlayedStat
+    ? (mode === "averages" ? "1" : "ROUND(SUM(total_games), 3)")
+    : mode === "averages"
+      ? "ROUND(1.0 * SUM(total_value) / NULLIF(SUM(recorded_games), 0), 3)"
+      : "ROUND(SUM(total_value), 3)";
   const parts: string[] = [];
   const binds: unknown[] = [];
 
@@ -3341,7 +3344,7 @@ async function runPlayerAggregateFastPath(
       AND a.season BETWEEN ? AND ?
     GROUP BY COALESCE(p.display_name, a.player_name_raw), a.season
   `);
-  binds.push(...sources, statKey, aggregateSeasonFrom, aggregateSeasonTo);
+  binds.push(...sources, aggregateStatKey, aggregateSeasonFrom, aggregateSeasonTo);
 
   const rankSeasonRows = singleEntityResults && format === "season";
   const sql = `
