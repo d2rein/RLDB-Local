@@ -235,7 +235,7 @@ if ($tunnelRequested -and -not $sitePasswordHash) {
 }
 $serviceConfig = [ordered]@{
   applicationVersion = $applicationVersion
-  schemaVersion = "0009_player_match_query_components"
+  schemaVersion = "0010_normalize_query_component_presence"
   releaseRoot = $releaseRoot
   nodePath = $nodePath
   databasePath = $databasePath

@@ -9,6 +9,10 @@ const migrationPath = resolve(
   import.meta.dirname,
   "../migrations/application/0009_player_match_query_components.sql",
 );
+const presenceMigrationPath = resolve(
+  import.meta.dirname,
+  "../migrations/application/0010_normalize_query_component_presence.sql",
+);
 
 test("player query components backfill and remain synchronized", () => {
   const databasePath = resolve(tmpdir(), `rldb-query-components-${process.pid}-${Date.now()}.sqlite`);
@@ -26,6 +30,7 @@ test("player query components backfill and remain synchronized", () => {
       );
     `);
     database.exec(readFileSync(migrationPath, "utf8"));
+    database.exec(readFileSync(presenceMigrationPath, "utf8"));
 
     assert.deepEqual(
       { ...database.prepare(`
@@ -45,6 +50,17 @@ test("player query components backfill and remain synchronized", () => {
         WHERE player_match_summary_id = 1
       `).get() },
       { tries: 4, goals: 0, minutes_played: 0, minutes_played_present: 0 },
+    );
+
+    database.prepare("UPDATE player_match_summary SET stats_json = ? WHERE player_match_summary_id = 1")
+      .run('{"tries":4,"minutes_played":null}');
+    assert.equal(
+      database.prepare(`
+        SELECT minutes_played_present
+        FROM player_match_query_components
+        WHERE player_match_summary_id = 1
+      `).get().minutes_played_present,
+      0,
     );
 
     database.prepare("DELETE FROM player_match_summary WHERE player_match_summary_id = 1").run();
