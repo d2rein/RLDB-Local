@@ -4925,26 +4925,27 @@ function uniqueConditionStatKeys(conditions: QueryCondition[], selectedStatKey: 
 function buildPlayerConditionAggregateColumns(
   conditionStatKeys: string[],
   mode: string
-): { baseSelect: string[]; outerSelect: string[]; binds: unknown[]; baseBindCount: number } {
+): { baseSelect: string[]; outerSelect: string[]; baseBinds: unknown[]; outerBinds: unknown[] } {
   const baseSelect: string[] = [];
   const outerSelect: string[] = [];
-  const binds: unknown[] = [];
-  let baseBindCount = 0;
+  const baseBinds: unknown[] = [];
+  const outerBinds: unknown[] = [];
 
   conditionStatKeys.forEach((statKey, index) => {
     const valueAlias = `condition_value_${index}`;
     const includedAlias = `condition_included_${index}`;
+    const valueExpr = playerQueryStatExpression(statKey);
     const includedExpr = PLAYER_ZERO_IF_MISSING.has(statKey)
       ? "1"
-      : `CASE WHEN ${playerStatPresentExpr("s", "?")} THEN 1 ELSE 0 END`;
+      : statKey === "minutes_played"
+        ? "d.minutes_played_present"
+        : `CASE WHEN ${playerStatPresentExpr("s", "?")} THEN 1 ELSE 0 END`;
 
-    baseSelect.push(`COALESCE(${playerStatNumericExpr("s", "?")}, 0) AS ${valueAlias}`);
+    baseSelect.push(`COALESCE(${valueExpr.sql}, 0) AS ${valueAlias}`);
     baseSelect.push(`${includedExpr} AS ${includedAlias}`);
-    binds.push(statKey);
-    baseBindCount += 1;
+    baseBinds.push(...valueExpr.binds);
     if (!PLAYER_ZERO_IF_MISSING.has(statKey)) {
-      binds.push(statKey);
-      baseBindCount += 1;
+      if (statKey !== "minutes_played") baseBinds.push(statKey);
     }
 
     outerSelect.push(`ROUND(
@@ -4954,10 +4955,10 @@ function buildPlayerConditionAggregateColumns(
           END,
           3
         ) AS "${statKey}"`);
-    binds.push(mode);
+    outerBinds.push(mode);
   });
 
-  return { baseSelect, outerSelect, binds, baseBindCount };
+  return { baseSelect, outerSelect, baseBinds, outerBinds };
 }
 
 function buildTeamConditionAggregateColumns(
@@ -5238,6 +5239,48 @@ function matchesAggregateConditions(row: QueryRow, conditions: QueryCondition[],
     }
   }
   return result ?? true;
+}
+
+function buildAggregateConditionSql(
+  conditions: QueryCondition[],
+  selectedStatKey: string,
+): { sql: string; binds: unknown[] } | null {
+  const activeConditions = conditions.filter(
+    (condition) => condition.statKey && condition.operator && condition.value !== ""
+  );
+  let expression = "";
+  const binds: unknown[] = [];
+
+  for (const condition of activeConditions) {
+    const operator =
+      condition.operator === "gt" ? ">" :
+      condition.operator === "gte" ? ">=" :
+      condition.operator === "eq" ? "=" :
+      condition.operator === "lt" ? "<" :
+      condition.operator === "lte" ? "<=" :
+      condition.operator === "neq" ? "<>" :
+      null;
+    if (!operator) continue;
+
+    const target =
+      condition.statKey === "games_included" ? quotedIdentifier("included_games") :
+      condition.statKey === "games" || condition.statKey === "games_played" ? quotedIdentifier("games") :
+      condition.statKey === selectedStatKey ? quotedIdentifier("stat_total") :
+      quotedIdentifier(condition.statKey);
+    const clause = `${target} ${operator} ?`;
+    binds.push(Number(condition.value));
+    if (!expression) {
+      expression = clause;
+    } else if (condition.joiner === "OR") {
+      expression = `(${expression} OR ${clause})`;
+    } else if (condition.joiner === "AND NOT") {
+      expression = `(${expression} AND NOT (${clause}))`;
+    } else {
+      expression = `(${expression} AND ${clause})`;
+    }
+  }
+
+  return expression ? { sql: expression, binds } : null;
 }
 
 function buildStreakHitConditionSql(
@@ -5567,8 +5610,18 @@ function playerQueryStatExpression(
   summaryAlias = "s",
   componentAlias = "d",
 ): { sql: string; binds: unknown[] } {
+  if (["games", "games_played", "games_included"].includes(statKey)) {
+    return { sql: "1", binds: [] };
+  }
   if (PLAYER_MATCH_QUERY_COMPONENT_COLUMNS.has(statKey)) {
     return { sql: `${componentAlias}.${quotedIdentifier(statKey)}`, binds: [] };
+  }
+  const recipe = getDerivedRecipe("player", statKey);
+  if (recipe && recipe.components.every((component) => PLAYER_MATCH_QUERY_COMPONENT_COLUMNS.has(component))) {
+    const componentExpressions = Object.fromEntries(
+      recipe.components.map((component) => [component, `${componentAlias}.${quotedIdentifier(component)}`])
+    );
+    return { sql: recipe.sqlCompute(componentExpressions), binds: [] };
   }
   return {
     sql: `COALESCE(${playerStatNumericExpr(summaryAlias, "?")}, 0)`,
@@ -6268,7 +6321,7 @@ async function runLeaderboardQuery(
       const conditionColumns = buildPlayerConditionAggregateColumns(conditionStatKeys, "totals");
       const rowCondition = buildPlayerRowConditionExpression(minuteScopedConditions, "s");
       const includedExpr = rowCondition ? `CASE WHEN (${rowCondition.sql}) THEN 1 ELSE 0 END` : "1";
-      const preFilterLimit = Math.min(50000, Math.max(limit * 50, 5000));
+      const aggregateCondition = buildAggregateConditionSql(aggregateConditions, statKey);
       const sql = `
         WITH base AS (
           SELECT
@@ -6283,6 +6336,7 @@ async function runLeaderboardQuery(
             ${matchSortKeySql("m.match_date_utc", "m.match_date_local_text")} AS match_sort_key,
             ${includedExpr} AS included_flag${conditionColumns.baseSelect.length ? `,\n            ${conditionColumns.baseSelect.join(",\n            ")}` : ""}
           FROM player_match_summary s
+          JOIN player_match_query_components d ON d.player_match_summary_id = s.player_match_summary_id
           LEFT JOIN players p ON p.player_id = s.player_id
           JOIN matches m ON m.match_id = s.match_id
           JOIN competitions c ON c.competition_id = m.competition_id
@@ -6291,37 +6345,39 @@ async function runLeaderboardQuery(
           LEFT JOIN venues v ON v.venue_id = m.venue_id
           WHERE s.season BETWEEN ? AND ?
           ${playerFilters.sql}
+        ), aggregated AS (
+          SELECT
+            ${grouping.select.join(", ")},
+            MIN(season) AS first_season,
+            MAX(season) AS last_season,
+            COUNT(*) AS games,
+            SUM(included_flag) AS included_games,
+            ROUND(SUM(included_flag), 3) AS stat_total${conditionColumns.outerSelect.length ? `,\n            ${conditionColumns.outerSelect.join(",\n            ")}` : ""}
+          FROM base
+          GROUP BY ${grouping.groupBy.join(", ")}
         )
-        SELECT
-          ${grouping.select.join(", ")},
-          MIN(season) AS first_season,
-          MAX(season) AS last_season,
-          COUNT(*) AS games,
-          SUM(included_flag) AS included_games,
-          ROUND(SUM(included_flag), 3) AS stat_total${conditionColumns.outerSelect.length ? `,\n          ${conditionColumns.outerSelect.join(",\n          ")}` : ""}
-        FROM base
-        GROUP BY ${grouping.groupBy.join(", ")}
+        SELECT *
+        FROM aggregated
+        ${aggregateCondition ? `WHERE ${aggregateCondition.sql}` : ""}
         ORDER BY stat_total DESC, games DESC, ${grouping.columns[0]} ASC
         LIMIT ?
       `;
       const binds: unknown[] = [
         ...(rowCondition?.binds ?? []),
-        ...conditionColumns.binds.slice(0, conditionColumns.baseBindCount),
+        ...conditionColumns.baseBinds,
         seasonFrom,
         seasonTo,
         ...playerFilters.binds,
-        ...conditionColumns.binds.slice(conditionColumns.baseBindCount),
-        preFilterLimit,
+        ...conditionColumns.outerBinds,
+        ...(aggregateCondition?.binds ?? []),
+        limit,
       ];
       const result = await db.prepare(sql).bind(...binds).all<QueryRow>();
-      const filteredRows = aggregateConditions.length
-        ? applyAggregateConditions(result.results ?? [], aggregateConditions, statKey)
-        : (result.results ?? []);
       return {
         ok: true,
         summary: `Top ${limit} players by games played from ${seasonFrom} to ${seasonTo}${grouping.label !== "overall" ? ` by ${grouping.label}` : ""}. Fast SQL path with minutes-based game inclusion.`,
         columns: [...grouping.columns, "stat_total", "games", "included_games", "first_season", "last_season"],
-        rows: filteredRows.slice(0, limit),
+        rows: result.results ?? [],
       };
     }
 
@@ -6394,20 +6450,21 @@ async function runLeaderboardQuery(
     const grouping = groupingColumns("player", format);
     const conditionStatKeys = uniqueConditionStatKeys(filters.conditions, statKey);
     const conditionColumns = buildPlayerConditionAggregateColumns(conditionStatKeys, mode);
+    const selectedValue = playerQueryStatExpression(statKey);
     const includedFlag = playerGamesPlayedStat
       ? "1"
       : PLAYER_ZERO_IF_MISSING.has(statKey)
       ? "1"
+      : statKey === "minutes_played"
+      ? "d.minutes_played_present"
       : `CASE WHEN s.season >= COALESCE(sd.first_consistent_season, 0) THEN 1 WHEN ${playerStatPresentExpr("s", "?")} THEN 1 ELSE 0 END`;
     const statValueExpr = playerGamesPlayedStat
       ? "1"
-      : `COALESCE(${playerStatNumericExpr("s", "?")}, 0)`;
+      : `COALESCE(${selectedValue.sql}, 0)`;
     const statExpr = mode === "averages"
       ? "ROUND(SUM(stat_value) / NULLIF(SUM(included_flag), 0), 3)"
       : "ROUND(SUM(stat_value), 3)";
-    const preFilterLimit = filters.conditions.length
-      ? Math.min(50000, Math.max(limit * 50, 5000))
-      : limit;
+    const aggregateCondition = buildAggregateConditionSql(filters.conditions, statKey);
     const sql = `
       WITH base AS (
         SELECT
@@ -6423,6 +6480,7 @@ async function runLeaderboardQuery(
           ${statValueExpr} AS stat_value,
           ${includedFlag} AS included_flag${conditionColumns.baseSelect.length ? `,\n          ${conditionColumns.baseSelect.join(",\n          ")}` : ""}
         FROM player_match_summary s
+        JOIN player_match_query_components d ON d.player_match_summary_id = s.player_match_summary_id
         LEFT JOIN players p ON p.player_id = s.player_id
         JOIN matches m ON m.match_id = s.match_id
         JOIN competitions c ON c.competition_id = m.competition_id
@@ -6432,27 +6490,38 @@ async function runLeaderboardQuery(
         LEFT JOIN stat_definitions sd ON sd.scope = 'player' AND sd.stat_key = ?
         WHERE s.season BETWEEN ? AND ?
         ${playerFilters.sql}
+      ), aggregated AS (
+        SELECT
+          ${grouping.select.join(", ")},
+          MIN(season) AS first_season,
+          MAX(season) AS last_season,
+          COUNT(*) AS games,
+          SUM(included_flag) AS included_games,
+          ${statExpr} AS stat_total${conditionColumns.outerSelect.length ? `,\n          ${conditionColumns.outerSelect.join(",\n          ")}` : ""}
+        FROM base
+        GROUP BY ${grouping.groupBy.join(", ")}
       )
-      SELECT
-        ${grouping.select.join(", ")},
-        MIN(season) AS first_season,
-        MAX(season) AS last_season,
-        COUNT(*) AS games,
-        SUM(included_flag) AS included_games,
-        ${statExpr} AS stat_total${conditionColumns.outerSelect.length ? `,\n        ${conditionColumns.outerSelect.join(",\n        ")}` : ""}
-      FROM base
-      GROUP BY ${grouping.groupBy.join(", ")}
+      SELECT *
+      FROM aggregated
+      ${aggregateCondition ? `WHERE ${aggregateCondition.sql}` : ""}
       ORDER BY stat_total DESC, included_games DESC, ${grouping.columns[0]} ASC
       LIMIT ?
     `;
-    const bindValues = playerGamesPlayedStat
-      ? [...conditionColumns.binds.slice(0, conditionColumns.baseBindCount), statKey, seasonFrom, seasonTo, ...playerFilters.binds, ...conditionColumns.binds.slice(conditionColumns.baseBindCount), preFilterLimit]
-      : PLAYER_ZERO_IF_MISSING.has(statKey)
-      ? [statKey, ...conditionColumns.binds.slice(0, conditionColumns.baseBindCount), statKey, seasonFrom, seasonTo, ...playerFilters.binds, ...conditionColumns.binds.slice(conditionColumns.baseBindCount), preFilterLimit]
-      : [statKey, statKey, ...conditionColumns.binds.slice(0, conditionColumns.baseBindCount), statKey, seasonFrom, seasonTo, ...playerFilters.binds, ...conditionColumns.binds.slice(conditionColumns.baseBindCount), preFilterLimit];
+    const bindValues = [
+      ...(playerGamesPlayedStat ? [] : selectedValue.binds),
+      ...(!playerGamesPlayedStat && !PLAYER_ZERO_IF_MISSING.has(statKey) && statKey !== "minutes_played" ? [statKey] : []),
+      ...conditionColumns.baseBinds,
+      statKey,
+      seasonFrom,
+      seasonTo,
+      ...playerFilters.binds,
+      ...conditionColumns.outerBinds,
+      ...(aggregateCondition?.binds ?? []),
+      limit,
+    ];
 
     const result = await db.prepare(sql).bind(...bindValues).all<QueryRow>();
-    let rows = applyAggregateConditions(result.results ?? [], filters.conditions, statKey);
+    let rows = result.results ?? [];
     if (format === "club") {
       rows = reduceToTopClubRows(rows, "player");
     }
