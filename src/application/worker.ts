@@ -3389,7 +3389,7 @@ async function runPlayerAggregateFastPath(
   const rows = (result.results ?? []).map((row) => {
     const { __group_rank, ...publicRow } = row;
     const hydrated: QueryRow = { ...publicRow };
-    if (!selectedDefinition?.isDerived) {
+    if (gamesPlayedStat || !selectedDefinition?.isDerived) {
       hydrated.games_played = row.games;
       hydrated[statKey] = row.stat_total;
     }
