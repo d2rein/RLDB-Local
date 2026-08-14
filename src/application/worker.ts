@@ -3776,7 +3776,7 @@ function canUsePlayerMatchAggregatePagedPath(
   if (!["overall", "season", "club", "ground", "opposition", "match"].includes(format)) return false;
   if (!allowConditionBypass && filters.conditions.length > 0) return false;
   const selectedDefinition = statDefinitions.find((definition) => definition.statKey === selectedStatKey);
-  if (selectedDefinition?.isDerived && !["games_played", "points"].includes(selectedStatKey)) return false;
+  if (selectedDefinition?.isDerived && selectedStatKey !== "games_played") return false;
   const sortDefinition = statDefinitions.find((definition) => definition.statKey === sortColumn);
   if (sortDefinition?.isDerived && sortColumn !== "games_played") return false;
   return true;
@@ -4319,9 +4319,7 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
     .filter((definition) => !definition.isDerived && definition.statKey !== "games_played")
     .map((definition) => definition.statKey))];
   if (!rawStatKeys.length && selectedStatKey !== "games_played") return null;
-  const selectedPointsRecipe = selectedStatKey === "points" ? getDerivedRecipe("player", "points") : null;
-  if (selectedStatKey !== "games_played" && !selectedPointsRecipe && !rawStatKeys.includes(selectedStatKey)) return null;
-  if (selectedPointsRecipe && selectedPointsRecipe.components.some((component) => !rawStatKeys.includes(component))) return null;
+  if (selectedStatKey !== "games_played" && !rawStatKeys.includes(selectedStatKey)) return null;
 
   const definitionByStatKey = new Map(statDefinitions.map((definition) => [definition.statKey, definition]));
   const getPlayerStatDefinition = (statKey: string) =>
@@ -4365,15 +4363,9 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
 
   const selectedValueAlias = selectedStatKey === "games_played"
     ? null
-    : selectedPointsRecipe
-      ? selectedPointsRecipe.sqlCompute(Object.fromEntries(
-          selectedPointsRecipe.components.map((component) => [component, statValueAliases.get(component) ?? "0"])
-        ))
-      : (statValueAliases.get(selectedStatKey) ?? quotedIdentifier(`v_${selectedStatKey}`));
+    : (statValueAliases.get(selectedStatKey) ?? quotedIdentifier(`v_${selectedStatKey}`));
   const selectedIncludedAlias = selectedStatKey === "games_played"
     ? null
-    : selectedPointsRecipe
-      ? "1"
     : (statIncludedAliases.get(selectedStatKey) ?? quotedIdentifier(`i_${selectedStatKey}`));
 
   const selectedStatTotalExpr = selectedStatKey === "games_played"
@@ -4420,9 +4412,6 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
     const directStatSelects = rawStatKeys.map((rawStatKey) =>
       `${statValueAliases.get(rawStatKey)} AS ${quotedIdentifier(rawStatKey)}`
     );
-    if (selectedPointsRecipe) {
-      directStatSelects.push(`${selectedValueAlias} AS ${quotedIdentifier(selectedStatKey)}`);
-    }
     const safeDirectSortColumn = safePlayerMatchSortColumn(
       sortColumn,
       groupingColumnsList,
@@ -6417,12 +6406,6 @@ async function runLeaderboardQuery(
             .filter((definition) => definition.statKey !== "games_included")
             .filter((definition) => supportsFullResultsMode(definition, mode as "totals" | "averages"));
           const neededStatKeys = new Set<string>([statKey, ...uniqueConditionStatKeys(filters.conditions, statKey)]);
-          for (const neededStatKey of [...neededStatKeys]) {
-            const recipe = getDerivedRecipe("player", neededStatKey);
-            if (recipe) {
-              for (const component of recipe.components) neededStatKeys.add(component);
-            }
-          }
           const definitionsForQuery = allDefinitions.filter((definition) =>
             neededStatKeys.has(definition.statKey) || definition.statKey === "games_played"
           );
