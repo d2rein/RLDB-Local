@@ -6,6 +6,7 @@ coverage/
 /data/
 /logs/
 /runtime/
+/runtime-data/
 /telemetry/
 /backups/
 /reports/
