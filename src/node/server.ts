@@ -10,6 +10,7 @@ const databasePath = path.resolve(
   process.env.RLDB_DATABASE_PATH || path.join(root, "data", "rldb.sqlite")
 );
 const maxRequestBodyBytes = parseInteger(process.env.RLDB_MAX_REQUEST_BODY_BYTES, 1024 * 1024);
+const maxQueryExecutionMs = parseInteger(process.env.RLDB_MAX_QUERY_EXECUTION_MS, 150_000);
 
 if (host !== "127.0.0.1" && host !== "localhost") {
   throw new Error(`RLDB_HOST must remain loopback-only; received ${host}`);
@@ -49,6 +50,8 @@ type SerializedResponse = {
 type QueuedRequest = {
   request: SerializedRequest;
   outgoing: http.ServerResponse;
+  startedAtMs?: number;
+  deadline?: ReturnType<typeof setTimeout>;
 };
 
 let queryWorker: Worker | null = null;
@@ -161,6 +164,7 @@ function startQueryWorker() {
     if (!activeRequest || message.id !== activeRequest.request.id) return;
 
     const { outgoing } = activeRequest;
+    clearActiveDeadline(activeRequest);
     activeRequest = null;
     if (!outgoing.destroyed) {
       outgoing.statusCode = message.status;
@@ -195,24 +199,40 @@ function dispatchNext() {
   activeRequest = requestQueue.shift() || null;
   if (!activeRequest) return;
   workerReady = false;
+  const dispatchedRequest = activeRequest;
+  activeRequest.startedAtMs = Date.now();
+  activeRequest.deadline = setTimeout(() => {
+    if (activeRequest !== dispatchedRequest) return;
+    restartQueryWorker("server_query_timeout", 504);
+  }, maxQueryExecutionMs);
+  activeRequest.deadline.unref();
   queryWorker.postMessage(activeRequest.request);
 }
 
-function restartQueryWorker(reason: string) {
+function restartQueryWorker(reason: string, statusCode = 500) {
   const worker = queryWorker;
   queryWorker = null;
   workerReady = false;
-  failActiveRequest(new Error(`Query cancelled: ${reason}.`));
+  const error = reason === "server_query_timeout"
+    ? new Error(`Query exceeded the ${Math.round(maxQueryExecutionMs / 1000)} second safety limit and was cancelled. The search service has recovered; narrower filters may complete faster.`)
+    : new Error(`Query cancelled: ${reason}.`);
+  failActiveRequest(error, statusCode);
   console.warn(JSON.stringify({ event: "rldb_query_worker_restart", reason }));
   if (worker) void worker.terminate();
   if (!shuttingDown) startQueryWorker();
 }
 
-function failActiveRequest(error: Error) {
+function failActiveRequest(error: Error, statusCode = 500) {
   if (!activeRequest) return;
   const { outgoing } = activeRequest;
+  clearActiveDeadline(activeRequest);
   activeRequest = null;
-  if (!outgoing.destroyed) writeError(outgoing, error);
+  if (!outgoing.destroyed) writeError(outgoing, error, statusCode);
+}
+
+function clearActiveDeadline(request: QueuedRequest) {
+  if (request.deadline) clearTimeout(request.deadline);
+  request.deadline = undefined;
 }
 
 function writeHealthResponse(outgoing: http.ServerResponse) {
@@ -233,15 +253,17 @@ function writeHealthResponse(outgoing: http.ServerResponse) {
       ready: workerReady,
       busy,
       queued_requests: requestQueue.length,
+      active_request_ms: activeRequest?.startedAtMs ? Date.now() - activeRequest.startedAtMs : 0,
+      execution_limit_ms: maxQueryExecutionMs,
     },
     checked_at_utc: new Date().toISOString(),
   }, null, 2));
 }
 
-function writeError(outgoing: http.ServerResponse, error: unknown) {
+function writeError(outgoing: http.ServerResponse, error: unknown, statusCode = 500) {
   const message = error instanceof Error ? error.message : String(error);
   if (!outgoing.headersSent) {
-    outgoing.writeHead(message === "Request body is too large." ? 413 : 500, {
+    outgoing.writeHead(message === "Request body is too large." ? 413 : statusCode, {
       "content-type": "application/json; charset=utf-8",
       "cache-control": "no-store",
     });

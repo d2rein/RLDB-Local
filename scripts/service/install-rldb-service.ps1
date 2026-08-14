@@ -246,6 +246,7 @@ $serviceConfig = [ordered]@{
   backendPort = $BackendPort
   telemetryPort = $TelemetryPort
   maxRequestBodyBytes = 1048576
+  maxQueryExecutionMs = 150000
   updateEnabled = $true
   updateDayOfWeek = 1
   updateHourLocal = 1

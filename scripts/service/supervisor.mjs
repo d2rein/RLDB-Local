@@ -55,6 +55,7 @@ const services = [
       RLDB_PORT: String(config.backendPort),
       RLDB_DATABASE_PATH: config.databasePath,
       RLDB_MAX_REQUEST_BODY_BYTES: String(config.maxRequestBodyBytes || 1048576),
+      RLDB_MAX_QUERY_EXECUTION_MS: String(config.maxQueryExecutionMs || 150000),
       TELEMETRY_ENDPOINT: `http://127.0.0.1:${config.telemetryPort}/events`,
       RLDB_APPLICATION_VERSION: config.applicationVersion,
       RLDB_SCHEMA_VERSION: config.schemaVersion,
