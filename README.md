@@ -52,6 +52,10 @@ verification results.
 See [docs/SERVICE_RUNBOOK.md](docs/SERVICE_RUNBOOK.md) for restricted-account
 installation, routine controls, permissions, and removal.
 
+See [docs/CODEX_HANDOFF.md](docs/CODEX_HANDOFF.md) for the current candidate
+state, latest shakedown evidence, remaining cutover gates, and recommended next
+actions for a fresh development thread.
+
 See
 [docs/PERFORMANCE_BASELINE_2026-07-31.md](docs/PERFORMANCE_BASELINE_2026-07-31.md)
 for the first installed-candidate query diagnosis and focused benchmark.
