@@ -110,7 +110,7 @@ Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\query-telemetry-server.mj
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\report-query-telemetry.mjs") -Destination (Join-Path $releaseRoot "scripts\report-query-telemetry.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\apply-application-migrations.mjs") -Destination (Join-Path $releaseRoot "scripts\apply-application-migrations.mjs") -Force
 Copy-Item -Path (Join-Path $SourceRoot "scripts\update\*.mjs") -Destination (Join-Path $releaseRoot "scripts\update") -Force
-Copy-Item -LiteralPath (Join-Path $SourceRoot "migrations\telemetry\0001_query_performance.sql") -Destination (Join-Path $releaseRoot "migrations\telemetry\0001_query_performance.sql") -Force
+Copy-Item -Path (Join-Path $SourceRoot "migrations\telemetry\*.sql") -Destination (Join-Path $releaseRoot "migrations\telemetry") -Force
 Copy-Item -Path (Join-Path $SourceRoot "migrations\application\*.sql") -Destination (Join-Path $releaseRoot "migrations\application") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\service\supervisor.mjs") -Destination (Join-Path $paths.Service "supervisor.mjs") -Force
 Copy-Item -LiteralPath (Join-Path $SourceRoot "scripts\service\run-supervisor.ps1") -Destination (Join-Path $paths.Service "run-supervisor.ps1") -Force
