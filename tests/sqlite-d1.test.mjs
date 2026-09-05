@@ -6,13 +6,13 @@ import test from "node:test";
 import { DatabaseSync } from "node:sqlite";
 import { SqliteD1Database } from "../src/node/sqlite-d1.mjs";
 
-function fixture() {
+function fixture(options = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "rldb-d1-"));
   const databasePath = path.join(directory, "test.sqlite");
   const seed = new DatabaseSync(databasePath);
   seed.exec("CREATE TABLE sample (id INTEGER PRIMARY KEY, name TEXT NOT NULL, active INTEGER NOT NULL)");
   seed.close();
-  const database = new SqliteD1Database(databasePath);
+  const database = new SqliteD1Database(databasePath, options);
   return {
     database,
     cleanup() {
@@ -39,6 +39,8 @@ test("bind, run, all and first preserve D1-compatible shapes", async () => {
       .all();
     assert.deepEqual(all.results, []);
     assert.equal(all.success, true);
+    assert.equal(typeof all.meta.runtime_diagnostics.userCpuMicros, "number");
+    assert.equal(all.meta.query_plan, null);
 
     const first = await database
       .prepare("SELECT id, name, active FROM sample WHERE id = ?")
@@ -51,6 +53,19 @@ test("bind, run, all and first preserve D1-compatible shapes", async () => {
       .bind(1)
       .first("name");
     assert.equal(scalar, "Alpha");
+  } finally {
+    cleanup();
+  }
+});
+
+test("slow-select diagnostics include a bounded SQLite query plan", async () => {
+  const { database, cleanup } = fixture({ slowQueryPlanThresholdMs: 0 });
+  try {
+    const result = await database.prepare("SELECT id FROM sample ORDER BY id").all();
+    assert.ok(Array.isArray(result.meta.query_plan));
+    assert.ok(result.meta.query_plan.length > 0);
+    assert.match(String(result.meta.query_plan[0].detail), /SCAN/);
+    assert.equal(typeof result.meta.runtime_diagnostics.minorPageFaults, "number");
   } finally {
     cleanup();
   }

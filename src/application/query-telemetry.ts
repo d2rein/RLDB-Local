@@ -16,8 +16,13 @@ export type QueryStatementTelemetry = {
   durationMs: number;
   rowsFetched: number;
   databaseRowsRead: number | null;
+  runtimeDiagnostics: Record<string, number> | null;
+  queryPlan: Array<Record<string, unknown>> | null;
   errorName: string | null;
   errorMessage: string | null;
+  startedAtUtc: string;
+  completedAtUtc: string | null;
+  lifecycleState: "running" | "completed" | "failed";
 };
 
 export type QueryTelemetryCollector = {
@@ -27,6 +32,7 @@ export type QueryTelemetryCollector = {
   databaseRowsRead: number;
   activeStatements: number;
   activeGroupStartedAt: number | null;
+  onStatementStart?: () => Promise<void>;
 };
 
 type QueryTelemetryEvent = {
@@ -36,6 +42,7 @@ type QueryTelemetryEvent = {
   requestInput: Record<string, unknown>;
   queryShapeHash: string;
   queryCategory: string;
+  executionRoute: string | null;
   databaseExecutionMs: number;
   applicationPostProcessingMs: number;
   totalRequestMs: number;
@@ -50,6 +57,10 @@ type QueryTelemetryEvent = {
   requestSource: "production" | "development" | "benchmark";
   statements: QueryStatementTelemetry[];
   truncationMarkers: string[];
+  requestStartedAtUtc: string;
+  lastProgressAtUtc: string;
+  completedAtUtc: string | null;
+  lifecycleState: "request_started" | "statement_running" | "completed" | "failed";
 };
 
 const TRACKED_ENDPOINTS = new Set([
@@ -70,6 +81,7 @@ const MAX_ERROR_CHARS = 16 * 1024;
 const MAX_STATEMENTS = 100;
 const DELIVERY_TIMEOUT_MS = 3000;
 const START_DELIVERY_TIMEOUT_MS = 150;
+const PROGRESS_DELIVERY_TIMEOUT_MS = 250;
 
 let lastDeliveryWarningAt = 0;
 
@@ -100,6 +112,25 @@ function databaseRowsReadFromResult(result: unknown): number | null {
   return Number.isFinite(rowsRead) ? rowsRead : null;
 }
 
+function runtimeDiagnosticsFromResult(result: unknown): Record<string, number> | null {
+  if (!result || typeof result !== "object") return null;
+  const diagnostics = (result as { meta?: { runtime_diagnostics?: unknown } }).meta?.runtime_diagnostics;
+  if (!diagnostics || typeof diagnostics !== "object" || Array.isArray(diagnostics)) return null;
+  return Object.fromEntries(
+    Object.entries(diagnostics as Record<string, unknown>)
+      .map(([key, value]) => [key, Number(value)] as const)
+      .filter(([, value]) => Number.isFinite(value))
+  );
+}
+
+function queryPlanFromResult(result: unknown): Array<Record<string, unknown>> | null {
+  if (!result || typeof result !== "object") return null;
+  const plan = (result as { meta?: { query_plan?: unknown } }).meta?.query_plan;
+  return Array.isArray(plan)
+    ? plan.filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === "object" && !Array.isArray(row))
+    : null;
+}
+
 function wrapPreparedStatement(
   statement: D1PreparedStatement,
   sql: string,
@@ -115,6 +146,26 @@ function wrapPreparedStatement(
       if (property === "all" || property === "first" || property === "run") {
         const method = property as StatementMethod;
         return async (...args: unknown[]) => {
+          const telemetryStatement: QueryStatementTelemetry = {
+            ordinal: collector.statements.length + 1,
+            method,
+            sql,
+            parameters: parameters.slice(),
+            durationMs: 0,
+            rowsFetched: 0,
+            databaseRowsRead: null,
+            runtimeDiagnostics: null,
+            queryPlan: null,
+            errorName: null,
+            errorMessage: null,
+            startedAtUtc: new Date().toISOString(),
+            completedAtUtc: null,
+            lifecycleState: "running",
+          };
+          collector.statements.push(telemetryStatement);
+          // Persist the exact SQL before invoking SQLite. If the Worker becomes
+          // blocked or is restarted, this running record remains diagnostic.
+          await collector.onStatementStart?.();
           const startedAt = nowMs();
           if (collector.activeStatements === 0) collector.activeGroupStartedAt = startedAt;
           collector.activeStatements += 1;
@@ -136,20 +187,20 @@ function wrapPreparedStatement(
             }
             const fetched = rowsFetchedFromResult(method, result);
             const rowsRead = databaseRowsReadFromResult(result);
+            const runtimeDiagnostics = runtimeDiagnosticsFromResult(result);
+            const queryPlan = queryPlanFromResult(result);
             const details = caughtError === null ? null : errorDetails(caughtError);
             collector.rowsFetched += fetched;
             collector.databaseRowsRead += rowsRead ?? 0;
-            collector.statements.push({
-              ordinal: collector.statements.length + 1,
-              method,
-              sql,
-              parameters: parameters.slice(),
-              durationMs,
-              rowsFetched: fetched,
-              databaseRowsRead: rowsRead,
-              errorName: details?.name ?? null,
-              errorMessage: details?.message ?? null,
-            });
+            telemetryStatement.durationMs = durationMs;
+            telemetryStatement.rowsFetched = fetched;
+            telemetryStatement.databaseRowsRead = rowsRead;
+            telemetryStatement.runtimeDiagnostics = runtimeDiagnostics;
+            telemetryStatement.queryPlan = queryPlan;
+            telemetryStatement.errorName = details?.name ?? null;
+            telemetryStatement.errorMessage = details?.message ?? null;
+            telemetryStatement.completedAtUtc = new Date().toISOString();
+            telemetryStatement.lifecycleState = caughtError === null ? "completed" : "failed";
           }
         };
       }
@@ -391,6 +442,51 @@ export async function handleWithQueryTelemetry(
   };
   const requestId = crypto.randomUUID();
   const startedAt = nowMs();
+  const requestStartedAtUtc = new Date().toISOString();
+  const requestInput = sanitizedRequestInput(url, []);
+  const requestCategory = queryCategory(url);
+  const source = requestSource(request, env);
+  const lifecycleEvent = async (
+    lifecycleState: QueryTelemetryEvent["lifecycleState"],
+    responseStatus: number,
+    timeoutMs: number,
+    completedAtUtc: string | null = null
+  ) => {
+    const progressAtUtc = new Date().toISOString();
+    const markers: string[] = [];
+    const shape = {
+      request: structuralRequestShape(url),
+      sql: collector.statements.map((statement) => normalizeSql(statement.sql)),
+    };
+    await deliverTelemetry(env, {
+      recordedAtUtc: progressAtUtc,
+      requestId,
+      endpoint: url.pathname,
+      requestInput,
+      queryShapeHash: await sha256Hex(JSON.stringify(shape)),
+      queryCategory: requestCategory,
+      executionRoute: null,
+      databaseExecutionMs: collector.databaseExecutionMs,
+      applicationPostProcessingMs: Math.max(0, nowMs() - startedAt - collector.databaseExecutionMs),
+      totalRequestMs: nowMs() - startedAt,
+      rowsFetched: collector.rowsFetched,
+      databaseRowsRead: collector.databaseRowsRead,
+      rowsReturned: null,
+      responseStatus,
+      errorName: null,
+      errorMessage: null,
+      applicationVersion: env.APP_VERSION ?? "unknown",
+      databaseSchemaVersion: env.SCHEMA_VERSION ?? "unknown",
+      requestSource: source,
+      statements: collector.statements,
+      truncationMarkers: markers,
+      requestStartedAtUtc,
+      lastProgressAtUtc: progressAtUtc,
+      completedAtUtc,
+      lifecycleState,
+    }, timeoutMs);
+  };
+  collector.onStatementStart = () => lifecycleEvent("statement_running", 102, PROGRESS_DELIVERY_TIMEOUT_MS);
   const startMarkers: string[] = [];
   const startDelivery = (async () => {
     const shape = {
@@ -404,6 +500,7 @@ export async function handleWithQueryTelemetry(
       requestInput: sanitizedRequestInput(url, startMarkers),
       queryShapeHash: await sha256Hex(JSON.stringify(shape)),
       queryCategory: queryCategory(url),
+      executionRoute: null,
       databaseExecutionMs: 0,
       applicationPostProcessingMs: 0,
       totalRequestMs: 0,
@@ -418,6 +515,10 @@ export async function handleWithQueryTelemetry(
       requestSource: requestSource(request, env),
       statements: [],
       truncationMarkers: startMarkers,
+      requestStartedAtUtc,
+      lastProgressAtUtc: requestStartedAtUtc,
+      completedAtUtc: null,
+      lifecycleState: "request_started",
     }, START_DELIVERY_TIMEOUT_MS);
   })();
   // Persist the start marker before a synchronous SQLite query can monopolize
@@ -443,6 +544,7 @@ export async function handleWithQueryTelemetry(
         requestInput: sanitizedRequestInput(url, markers),
         queryShapeHash: await sha256Hex(JSON.stringify(shape)),
         queryCategory: queryCategory(url),
+        executionRoute: null,
         databaseExecutionMs: collector.databaseExecutionMs,
         applicationPostProcessingMs: Math.max(0, totalRequestMs - collector.databaseExecutionMs),
         totalRequestMs,
@@ -457,6 +559,10 @@ export async function handleWithQueryTelemetry(
         requestSource: requestSource(request, env),
         statements: collector.statements,
         truncationMarkers: markers,
+        requestStartedAtUtc,
+        lastProgressAtUtc: new Date().toISOString(),
+        completedAtUtc: new Date().toISOString(),
+        lifecycleState: "failed",
       };
       await deliverTelemetry(env, event);
     })());
@@ -486,6 +592,7 @@ export async function handleWithQueryTelemetry(
       requestInput: sanitizedRequestInput(url, markers),
       queryShapeHash: await sha256Hex(JSON.stringify(shape)),
       queryCategory: queryCategory(url),
+      executionRoute: response.headers.get("x-rldb-execution-route"),
       databaseExecutionMs: collector.databaseExecutionMs,
       applicationPostProcessingMs: Math.max(0, totalRequestMs - collector.databaseExecutionMs),
       totalRequestMs,
@@ -500,6 +607,10 @@ export async function handleWithQueryTelemetry(
       requestSource: requestSource(request, env),
       statements: collector.statements,
       truncationMarkers: markers,
+      requestStartedAtUtc,
+      lastProgressAtUtc: new Date().toISOString(),
+      completedAtUtc: new Date().toISOString(),
+      lifecycleState: response.ok ? "completed" : "failed",
     });
   })());
   return response;

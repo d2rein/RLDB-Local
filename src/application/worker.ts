@@ -320,6 +320,13 @@ function isAuthorizedBackendRequest(request: Request, env: Env): boolean {
   return (request.headers.get("x-rldb-token") ?? "") === env.LOCAL_API_TOKEN;
 }
 
+function isTrustedPublicSiteProxyRequest(request: Request, url: URL, env: Env): boolean {
+  return Boolean(env.LOCAL_API_TOKEN)
+    && isProxyEligibleRequestPath(url.pathname)
+    && request.headers.get("x-rldb-proxied-by") === "cloudflare-public-site"
+    && isAuthorizedBackendRequest(request, env);
+}
+
 async function proxyToRemoteBackend(request: Request, url: URL, env: Env): Promise<Response | null> {
   const remoteOrigin = trimTrailingSlash(String(env.REMOTE_QUERY_ORIGIN ?? "").trim());
   if (!remoteOrigin || !isProxyEligibleRequestPath(url.pathname)) return null;
@@ -3615,6 +3622,11 @@ async function runFullResultsPlayerAggregateFastPath(
     }
   }
   statKeys.add(selectedStatKey);
+  const gamesPlayedStat = selectedStatKey === "games_played";
+  // Persisted aggregates do not carry a separate games_played stat row.
+  // Tries exists for every imported player-season, so its total_games value
+  // is the same proven anchor used by the leaderboard fast path.
+  if (gamesPlayedStat) statKeys.add("tries");
   const aggregateStatKeys = [...statKeys].filter((statKey) => statKey !== "games_played");
   const modernStatKeys = aggregateStatKeys;
 
@@ -3660,8 +3672,11 @@ async function runFullResultsPlayerAggregateFastPath(
     }
     return `ROUND(SUM(CASE WHEN stat_key = ${statKeySql} THEN total_value ELSE 0 END), 3) AS ${alias}`;
   });
-  const selectedStatKeySql = quotedSqlString(selectedStatKey);
-  const selectedStatTotalExpr = mode === "averages"
+  const selectedAggregateStatKey = gamesPlayedStat ? "tries" : selectedStatKey;
+  const selectedStatKeySql = quotedSqlString(selectedAggregateStatKey);
+  const selectedStatTotalExpr = gamesPlayedStat
+    ? `ROUND(SUM(CASE WHEN stat_key = ${selectedStatKeySql} THEN total_games ELSE 0 END), 3)`
+    : mode === "averages"
     ? `ROUND(
         1.0 * SUM(CASE WHEN stat_key = ${selectedStatKeySql} THEN total_value ELSE 0 END)
         / NULLIF(SUM(CASE WHEN stat_key = ${selectedStatKeySql} THEN recorded_games ELSE 0 END), 0),
@@ -4973,6 +4988,13 @@ function buildPlayerConditionAggregateColumns(
   });
 
   return { baseSelect, outerSelect, baseBinds, outerBinds };
+}
+
+function queryRouteHeaders(route: string): Record<string, string> {
+  return {
+    "cache-control": "no-store",
+    "x-rldb-execution-route": route,
+  };
 }
 
 function buildTeamConditionAggregateColumns(
@@ -13034,7 +13056,7 @@ const applicationWorker = {
       );
     }
 
-    if (isSitePasswordProtectionEnabled(env)) {
+    if (isSitePasswordProtectionEnabled(env) && !isTrustedPublicSiteProxyRequest(request, url, env)) {
       if (url.pathname === "/auth/logout") {
         return redirect("/auth/login", { "set-cookie": buildClearSiteSessionCookieHeader() });
       }
@@ -13359,9 +13381,7 @@ const applicationWorker = {
           : payload;
         return json(responsePayload, {
           status: responsePayload.ok ? 200 : 501,
-          headers: {
-            "cache-control": "no-store",
-          },
+          headers: queryRouteHeaders("leaderboard.primary"),
         });
       } catch (error) {
         return json(
@@ -13526,7 +13546,7 @@ const applicationWorker = {
               sortColumn: displaySortColumn,
               sortDirection,
             },
-            { headers: { "cache-control": "no-store" } }
+            { headers: queryRouteHeaders("full.leaderboard.streak") }
           );
         }
         if (scope === "team" && mode !== "streaks" && selectedStatKey === "margin" && normalizeScoreHalf(filters.scoreHalf) === "all") {
@@ -13573,7 +13593,7 @@ const applicationWorker = {
               sortColumn: safeMarginSortColumn,
               sortDirection,
             },
-            { headers: { "cache-control": "no-store" } }
+            { headers: queryRouteHeaders("full.leaderboard.margin") }
           );
         }
         if (scope === "team" && mode !== "streaks" && selectedStatKey !== "margin" && format !== "match") {
@@ -13620,7 +13640,7 @@ const applicationWorker = {
               sortColumn: displaySortColumn,
               sortDirection,
             },
-            { headers: { "cache-control": "no-store" } }
+            { headers: queryRouteHeaders("full.leaderboard.team") }
           );
         }
         const aggregatePayload = scope === "player" && !shouldCollapseByEntity
@@ -13668,7 +13688,7 @@ const applicationWorker = {
               sortColumn: displaySortColumn,
               sortDirection,
             },
-            { headers: { "cache-control": "no-store" } }
+            { headers: queryRouteHeaders("full.player.precomputed_aggregate") }
           );
         }
         const matchAggregatePagedPayload = !shouldCollapseByEntity
@@ -13754,7 +13774,7 @@ const applicationWorker = {
               sortColumn: displaySortColumn,
               sortDirection,
             },
-            { headers: { "cache-control": "no-store" } }
+            { headers: queryRouteHeaders("full.match_aggregate_paged") }
           );
         }
         const conditionCandidateLimit = Math.min(50000, Math.max(page * pageSize * 20, 5000));
@@ -13822,7 +13842,7 @@ const applicationWorker = {
               sortColumn: displaySortColumn,
               sortDirection,
             },
-            { headers: { "cache-control": "no-store" } }
+            { headers: queryRouteHeaders("full.match_aggregate_condition") }
           );
         }
         const rawPayload = await runFullResultsRawQuery(env.DB, scope, seasonFrom, seasonTo, filters);
@@ -13865,7 +13885,7 @@ const applicationWorker = {
             sortColumn: displaySortColumn,
             sortDirection,
           },
-          { headers: { "cache-control": "no-store" } }
+          { headers: queryRouteHeaders("full.raw_fallback") }
         );
       } catch (error) {
         return json(

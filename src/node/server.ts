@@ -50,6 +50,7 @@ type SerializedResponse = {
 type QueuedRequest = {
   request: SerializedRequest;
   outgoing: http.ServerResponse;
+  enqueuedAtMs: number;
   startedAtMs?: number;
   deadline?: ReturnType<typeof setTimeout>;
 };
@@ -72,7 +73,7 @@ const server = http.createServer(async (incoming, outgoing) => {
 
   try {
     const request = await serializeRequest(incoming, requestUrl);
-    const queued: QueuedRequest = { request, outgoing };
+    const queued: QueuedRequest = { request, outgoing, enqueuedAtMs: Date.now() };
     requestQueue.push(queued);
 
     const cancel = () => {
@@ -163,8 +164,9 @@ function startQueryWorker() {
     if ("type" in message) return;
     if (!activeRequest || message.id !== activeRequest.request.id) return;
 
-    const { outgoing } = activeRequest;
-    clearActiveDeadline(activeRequest);
+    const completedRequest = activeRequest;
+    const { outgoing } = completedRequest;
+    clearActiveDeadline(completedRequest);
     activeRequest = null;
     if (!outgoing.destroyed) {
       outgoing.statusCode = message.status;
@@ -178,6 +180,15 @@ function startQueryWorker() {
           outgoing.setHeader(name, value);
         }
       }
+      const completedAtMs = Date.now();
+      const workerElapsedMs = completedRequest.startedAtMs
+        ? completedAtMs - completedRequest.startedAtMs
+        : 0;
+      const queueWaitMs = completedRequest.startedAtMs
+        ? completedRequest.startedAtMs - completedRequest.enqueuedAtMs
+        : 0;
+      outgoing.setHeader("x-rldb-queue-wait-ms", String(Math.max(0, queueWaitMs)));
+      outgoing.setHeader("x-rldb-worker-elapsed-ms", String(Math.max(0, workerElapsedMs)));
       outgoing.end(Buffer.from(message.body));
     }
   });

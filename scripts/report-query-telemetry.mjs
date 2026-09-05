@@ -57,6 +57,7 @@ function groupedSummary(keys) {
 }
 
 const categories = groupedSummary(["query_category"]).sort((a, b) => b.median - a.median);
+const routes = groupedSummary(["execution_route"]).sort((a, b) => b.median - a.median);
 const shapes = groupedSummary(["query_shape_hash"]).sort((a, b) => b.count - a.count);
 const versions = groupedSummary(["query_shape_hash", "application_version"])
   .sort((a, b) => a.keys[0].localeCompare(b.keys[0]) || b.median - a.median);
@@ -109,11 +110,19 @@ if (format === "csv") {
         row.maximum.toFixed(2), row.mean.toFixed(2),
       ])
     ), "",
+    "## Execution Routes", "",
+    markdownTable(
+      ["Route", "Count", "Median ms", "P95 ms", "Maximum ms", "Mean ms"],
+      routes.map((row) => [
+        row.keys[0], row.count, row.median.toFixed(2), row.p95.toFixed(2),
+        row.maximum.toFixed(2), row.mean.toFixed(2),
+      ])
+    ), "",
     "## Slowest Queries", "",
     markdownTable(
-      ["Timestamp", "Request ID", "Category", "Total ms", "DB ms", "Post ms", "Rows read", "Status", "Version"],
+      ["Timestamp", "Request ID", "Category", "Route", "Total ms", "DB ms", "Post ms", "Rows read", "Status", "Version"],
       slowest.map((row) => [
-        row.recorded_at_utc, row.request_id, row.query_category,
+        row.recorded_at_utc, row.request_id, row.query_category, row.execution_route,
         Number(row.total_request_ms).toFixed(2), Number(row.database_execution_ms).toFixed(2),
         Number(row.application_post_processing_ms).toFixed(2), row.database_rows_read,
         row.response_status, row.application_version,

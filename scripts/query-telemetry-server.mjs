@@ -12,7 +12,7 @@ const databasePath = path.resolve(
   process.env.RLDB_TELEMETRY_DB_PATH
     || path.join(projectRoot, "runtime-data", "telemetry", "query-performance.sqlite")
 );
-const migrationPath = path.join(projectRoot, "migrations", "telemetry", "0001_query_performance.sql");
+const migrationsDirectory = path.join(projectRoot, "migrations", "telemetry");
 const expectedToken = process.env.RLDB_TELEMETRY_TOKEN || "";
 const defaultApplicationVersion = process.env.RLDB_APPLICATION_VERSION || "unknown";
 const defaultSchemaVersion = process.env.RLDB_SCHEMA_VERSION || "unknown";
@@ -23,7 +23,7 @@ const flushBatchSize = 50;
 
 await fsPromises.mkdir(path.dirname(databasePath), { recursive: true });
 const database = new DatabaseSync(databasePath);
-database.exec(await fsPromises.readFile(migrationPath, "utf8"));
+await applyTelemetryMigrations();
 
 const insertEvent = database.prepare(`
   INSERT INTO query_events (
@@ -31,8 +31,10 @@ const insertEvent = database.prepare(`
     query_category, database_execution_ms, application_post_processing_ms,
     total_request_ms, rows_fetched, database_rows_read, rows_returned,
     response_status, error_name, error_message, application_version,
-    database_schema_version, request_source, statement_count, truncation_markers_json
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    database_schema_version, request_source, statement_count, truncation_markers_json,
+    request_started_at_utc, last_progress_at_utc, completed_at_utc, lifecycle_state,
+    execution_route
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(request_id) DO UPDATE SET
     recorded_at_utc = excluded.recorded_at_utc,
     endpoint = excluded.endpoint,
@@ -52,15 +54,22 @@ const insertEvent = database.prepare(`
     database_schema_version = excluded.database_schema_version,
     request_source = excluded.request_source,
     statement_count = excluded.statement_count,
-    truncation_markers_json = excluded.truncation_markers_json
+    truncation_markers_json = excluded.truncation_markers_json,
+    request_started_at_utc = COALESCE(query_events.request_started_at_utc, excluded.request_started_at_utc),
+    last_progress_at_utc = excluded.last_progress_at_utc,
+    completed_at_utc = excluded.completed_at_utc,
+    lifecycle_state = excluded.lifecycle_state,
+    execution_route = excluded.execution_route
 `);
 const selectEventId = database.prepare("SELECT event_id FROM query_events WHERE request_id = ?");
 const deleteEventStatements = database.prepare("DELETE FROM query_statements WHERE event_id = ?");
 const insertStatement = database.prepare(`
   INSERT INTO query_statements (
     event_id, ordinal, method, sql_text, normalized_sql, parameters_json,
-    duration_ms, rows_fetched, database_rows_read, error_name, error_message
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    duration_ms, rows_fetched, database_rows_read, error_name, error_message,
+    started_at_utc, completed_at_utc, lifecycle_state,
+    runtime_diagnostics_json, query_plan_json
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const queue = [];
@@ -100,7 +109,12 @@ function insertTelemetryEvent(event) {
       effectiveVersion(event.databaseSchemaVersion, defaultSchemaVersion),
       String(event.requestSource ?? "development"),
       Array.isArray(event.statements) ? event.statements.length : 0,
-      JSON.stringify(event.truncationMarkers ?? [])
+      JSON.stringify(event.truncationMarkers ?? []),
+      event.requestStartedAtUtc ? String(event.requestStartedAtUtc) : String(event.recordedAtUtc ?? new Date().toISOString()),
+      event.lastProgressAtUtc ? String(event.lastProgressAtUtc) : String(event.recordedAtUtc ?? new Date().toISOString()),
+      event.completedAtUtc ? String(event.completedAtUtc) : null,
+      String(event.lifecycleState ?? (Number(event.responseStatus) === 102 ? "request_started" : "completed")),
+      event.executionRoute ? String(event.executionRoute) : null
     );
     const eventRow = selectEventId.get(requestId);
     if (!eventRow) throw new Error(`Unable to resolve telemetry event ${requestId} after upsert.`);
@@ -120,13 +134,54 @@ function insertTelemetryEvent(event) {
           ? null
           : Number(statement.databaseRowsRead),
         statement.errorName ? String(statement.errorName) : null,
-        statement.errorMessage ? String(statement.errorMessage) : null
+        statement.errorMessage ? String(statement.errorMessage) : null,
+        statement.startedAtUtc ? String(statement.startedAtUtc) : null,
+        statement.completedAtUtc ? String(statement.completedAtUtc) : null,
+        String(statement.lifecycleState ?? "completed"),
+        statement.runtimeDiagnostics ? JSON.stringify(statement.runtimeDiagnostics) : null,
+        statement.queryPlan ? JSON.stringify(statement.queryPlan) : null
       );
     }
     database.exec("COMMIT");
   } catch (error) {
     database.exec("ROLLBACK");
     throw error;
+  }
+}
+
+async function applyTelemetryMigrations() {
+  const migrationNames = (await fsPromises.readdir(migrationsDirectory))
+    .filter((name) => /^\d+.*\.sql$/i.test(name))
+    .sort();
+  const initialMigration = migrationNames.find((name) => name.startsWith("0001"));
+  if (!initialMigration) throw new Error("Missing initial telemetry migration.");
+  database.exec(await fsPromises.readFile(path.join(migrationsDirectory, initialMigration), "utf8"));
+  const wasApplied = database.prepare(
+    "SELECT 1 AS applied FROM telemetry_migrations WHERE migration_name = ?"
+  );
+  const recordMigration = database.prepare(
+    "INSERT OR IGNORE INTO telemetry_migrations (migration_name, applied_at_utc) VALUES (?, ?)"
+  );
+  for (const migrationName of migrationNames) {
+    if (migrationName === initialMigration || wasApplied.get(migrationName)) continue;
+    const sql = await fsPromises.readFile(path.join(migrationsDirectory, migrationName), "utf8");
+    database.exec("BEGIN IMMEDIATE");
+    try {
+      for (const statement of sql.split(";").map((value) => value.trim()).filter(Boolean)) {
+        try {
+          database.exec(`${statement};`);
+        } catch (error) {
+          // SQLite does not support ADD COLUMN IF NOT EXISTS. Older installed
+          // sidecars applied lifecycle columns before migrations were tracked.
+          if (!String(error?.message ?? error).includes("duplicate column name")) throw error;
+        }
+      }
+      recordMigration.run(migrationName, new Date().toISOString());
+      database.exec("COMMIT");
+    } catch (error) {
+      database.exec("ROLLBACK");
+      throw error;
+    }
   }
 }
 
