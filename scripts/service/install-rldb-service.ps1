@@ -154,20 +154,18 @@ if ($existingTaskBeforeMigration) {
   Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 
   # The scheduled-task host does not own the detached Node supervisor process,
-  # so stop every still-running PID recorded by this candidate even when the
+  # so stop every still-running process rooted under this candidate even when
   # backend children already closed gracefully. Validate executable and command
   # line before terminating anything.
-  $statusPath = Join-Path $paths.Runtime "status.json"
-  $candidateProcessIds = @()
-  if (Test-Path -LiteralPath $statusPath) {
-    $candidateStatus = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
-    $candidateProcessIds += [int]$candidateStatus.supervisorPid
-    $candidateProcessIds += @($candidateStatus.services.PSObject.Properties.Value | ForEach-Object { [int]$_.pid })
-  }
   $normalizedInstallRoot = ([IO.Path]::GetFullPath($InstallRoot)).TrimEnd("\") + "\"
-  foreach ($candidateProcessId in @($candidateProcessIds | Where-Object { $_ -gt 0 } | Select-Object -Unique)) {
-    $candidateProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $candidateProcessId" -ErrorAction SilentlyContinue
-    if (-not $candidateProcess) { continue }
+  $candidateProcesses = Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object {
+    $candidateName = [string]$_.Name
+    $candidateCommandLine = [string]$_.CommandLine
+    ($candidateName -in @("node.exe", "powershell.exe", "cloudflared.exe")) -and
+      ($candidateCommandLine.IndexOf($normalizedInstallRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0)
+  }
+  foreach ($candidateProcess in $candidateProcesses) {
+    $candidateProcessId = [int]$candidateProcess.ProcessId
     $candidateCommandLine = [string]$candidateProcess.CommandLine
     $candidateName = [string]$candidateProcess.Name
     $candidateExecutableAllowed = $candidateName -in @("node.exe", "powershell.exe", "cloudflared.exe")
