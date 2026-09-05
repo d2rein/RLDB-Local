@@ -143,11 +143,45 @@ $candidateQuiescedForMigration = $false
 $existingTaskBeforeMigration = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 if ($existingTaskBeforeMigration) {
   Write-Host "Stopping the existing candidate before database migrations..."
-  Stop-ScheduledTask -TaskName $TaskName -ErrorAction Stop
+  # Ask the supervisor to close SQLite and its children before stopping the
+  # scheduled-task host. Stopping the host first can orphan Node processes.
+  Set-Content -LiteralPath (Join-Path $paths.Control "desired-state.txt") -Value "stopped" -Encoding ascii
   for ($attempt = 1; $attempt -le 30; $attempt += 1) {
     $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
     if (-not $listener) { break }
     Start-Sleep -Seconds 1
+  }
+  Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+
+  # Recover safely from older installs where the scheduled-task host was
+  # stopped before its children. Only terminate PIDs recorded by this
+  # candidate whose command line still points inside the exact install root.
+  if (Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue) {
+    $statusPath = Join-Path $paths.Runtime "status.json"
+    $candidateProcessIds = @()
+    if (Test-Path -LiteralPath $statusPath) {
+      $candidateStatus = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+      $candidateProcessIds += [int]$candidateStatus.supervisorPid
+      $candidateProcessIds += @($candidateStatus.services.PSObject.Properties.Value | ForEach-Object { [int]$_.pid })
+    }
+    $normalizedInstallRoot = ([IO.Path]::GetFullPath($InstallRoot)).TrimEnd("\") + "\"
+    foreach ($candidateProcessId in @($candidateProcessIds | Where-Object { $_ -gt 0 } | Select-Object -Unique)) {
+      $candidateProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $candidateProcessId" -ErrorAction SilentlyContinue
+      if (-not $candidateProcess) { continue }
+      $candidateCommandLine = [string]$candidateProcess.CommandLine
+      $candidateName = [string]$candidateProcess.Name
+      $candidateExecutableAllowed = $candidateName -in @("node.exe", "powershell.exe", "cloudflared.exe")
+      $candidatePathMatches = $candidateCommandLine.IndexOf($normalizedInstallRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0
+      if (-not ($candidateExecutableAllowed -and $candidatePathMatches)) {
+        Write-Warning "Refusing to stop PID $candidateProcessId because it is not a validated C:\RLDB candidate process."
+        continue
+      }
+      Stop-Process -Id $candidateProcessId -Force -ErrorAction SilentlyContinue
+    }
+    for ($attempt = 1; $attempt -le 10; $attempt += 1) {
+      if (-not (Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue)) { break }
+      Start-Sleep -Seconds 1
+    }
   }
   if (Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue) {
     throw "The candidate did not stop before database migrations."
@@ -162,6 +196,7 @@ try {
   }
 } catch {
   if ($candidateQuiescedForMigration) {
+    Set-Content -LiteralPath (Join-Path $paths.Control "desired-state.txt") -Value "running" -Encoding ascii
     Start-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
   }
   throw
