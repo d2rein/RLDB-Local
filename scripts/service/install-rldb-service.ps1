@@ -164,13 +164,26 @@ if ($existingTaskBeforeMigration) {
     ($candidateName -in @("node.exe", "powershell.exe", "cloudflared.exe")) -and
       ($candidateCommandLine.IndexOf($normalizedInstallRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0)
   }
-  foreach ($candidateProcess in $candidateProcesses) {
+  $candidatePortProcessIds = @(
+    foreach ($candidatePort in @($BackendPort, $TelemetryPort)) {
+      Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $candidatePort -State Listen -ErrorAction SilentlyContinue |
+        ForEach-Object { [int]$_.OwningProcess }
+    }
+  ) | Where-Object { $_ -gt 0 } | Select-Object -Unique
+  foreach ($candidatePortProcessId in $candidatePortProcessIds) {
+    $candidatePortProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $candidatePortProcessId" -ErrorAction SilentlyContinue
+    if ($candidatePortProcess -and [string]$candidatePortProcess.Name -eq "node.exe") {
+      $candidateProcesses += $candidatePortProcess
+    }
+  }
+  foreach ($candidateProcess in @($candidateProcesses | Sort-Object ProcessId -Unique)) {
     $candidateProcessId = [int]$candidateProcess.ProcessId
     $candidateCommandLine = [string]$candidateProcess.CommandLine
     $candidateName = [string]$candidateProcess.Name
     $candidateExecutableAllowed = $candidateName -in @("node.exe", "powershell.exe", "cloudflared.exe")
     $candidatePathMatches = $candidateCommandLine.IndexOf($normalizedInstallRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0
-    if (-not ($candidateExecutableAllowed -and $candidatePathMatches)) {
+    $candidatePortMatches = ($candidateName -eq "node.exe") -and ($candidateProcessId -in $candidatePortProcessIds)
+    if (-not ($candidateExecutableAllowed -and ($candidatePathMatches -or $candidatePortMatches))) {
       Write-Warning "Refusing to stop PID $candidateProcessId because it is not a validated $InstallRoot candidate process."
       continue
     }
