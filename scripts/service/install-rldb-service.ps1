@@ -153,37 +153,39 @@ if ($existingTaskBeforeMigration) {
   }
   Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 
-  # Recover safely from older installs where the scheduled-task host was
-  # stopped before its children. Only terminate PIDs recorded by this
-  # candidate whose command line still points inside the exact install root.
-  if (Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue) {
-    $statusPath = Join-Path $paths.Runtime "status.json"
-    $candidateProcessIds = @()
-    if (Test-Path -LiteralPath $statusPath) {
-      $candidateStatus = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
-      $candidateProcessIds += [int]$candidateStatus.supervisorPid
-      $candidateProcessIds += @($candidateStatus.services.PSObject.Properties.Value | ForEach-Object { [int]$_.pid })
-    }
-    $normalizedInstallRoot = ([IO.Path]::GetFullPath($InstallRoot)).TrimEnd("\") + "\"
-    foreach ($candidateProcessId in @($candidateProcessIds | Where-Object { $_ -gt 0 } | Select-Object -Unique)) {
-      $candidateProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $candidateProcessId" -ErrorAction SilentlyContinue
-      if (-not $candidateProcess) { continue }
-      $candidateCommandLine = [string]$candidateProcess.CommandLine
-      $candidateName = [string]$candidateProcess.Name
-      $candidateExecutableAllowed = $candidateName -in @("node.exe", "powershell.exe", "cloudflared.exe")
-      $candidatePathMatches = $candidateCommandLine.IndexOf($normalizedInstallRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0
-      if (-not ($candidateExecutableAllowed -and $candidatePathMatches)) {
-        Write-Warning "Refusing to stop PID $candidateProcessId because it is not a validated C:\RLDB candidate process."
-        continue
-      }
-      Stop-Process -Id $candidateProcessId -Force -ErrorAction SilentlyContinue
-    }
-    for ($attempt = 1; $attempt -le 10; $attempt += 1) {
-      if (-not (Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue)) { break }
-      Start-Sleep -Seconds 1
-    }
+  # The scheduled-task host does not own the detached Node supervisor process,
+  # so stop every still-running PID recorded by this candidate even when the
+  # backend children already closed gracefully. Validate executable and command
+  # line before terminating anything.
+  $statusPath = Join-Path $paths.Runtime "status.json"
+  $candidateProcessIds = @()
+  if (Test-Path -LiteralPath $statusPath) {
+    $candidateStatus = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+    $candidateProcessIds += [int]$candidateStatus.supervisorPid
+    $candidateProcessIds += @($candidateStatus.services.PSObject.Properties.Value | ForEach-Object { [int]$_.pid })
   }
-  if (Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue) {
+  $normalizedInstallRoot = ([IO.Path]::GetFullPath($InstallRoot)).TrimEnd("\") + "\"
+  foreach ($candidateProcessId in @($candidateProcessIds | Where-Object { $_ -gt 0 } | Select-Object -Unique)) {
+    $candidateProcess = Get-CimInstance Win32_Process -Filter "ProcessId = $candidateProcessId" -ErrorAction SilentlyContinue
+    if (-not $candidateProcess) { continue }
+    $candidateCommandLine = [string]$candidateProcess.CommandLine
+    $candidateName = [string]$candidateProcess.Name
+    $candidateExecutableAllowed = $candidateName -in @("node.exe", "powershell.exe", "cloudflared.exe")
+    $candidatePathMatches = $candidateCommandLine.IndexOf($normalizedInstallRoot, [StringComparison]::OrdinalIgnoreCase) -ge 0
+    if (-not ($candidateExecutableAllowed -and $candidatePathMatches)) {
+      Write-Warning "Refusing to stop PID $candidateProcessId because it is not a validated $InstallRoot candidate process."
+      continue
+    }
+    Stop-Process -Id $candidateProcessId -Force -ErrorAction SilentlyContinue
+  }
+  for ($attempt = 1; $attempt -le 10; $attempt += 1) {
+    $backendListener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+    $telemetryListener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $TelemetryPort -State Listen -ErrorAction SilentlyContinue
+    if (-not $backendListener -and -not $telemetryListener) { break }
+    Start-Sleep -Seconds 1
+  }
+  if ((Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue) -or
+      (Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $TelemetryPort -State Listen -ErrorAction SilentlyContinue)) {
     throw "The candidate did not stop before database migrations."
   }
   $candidateQuiescedForMigration = $true
