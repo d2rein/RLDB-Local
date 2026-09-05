@@ -141,17 +141,26 @@ foreach ($competition in @("NRL", "NRLW")) {
 # the operational service on 8797 remains untouched.
 $candidateQuiescedForMigration = $false
 $existingTaskBeforeMigration = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-if ($existingTaskBeforeMigration) {
+$legacyCandidateTasks = @(Get-ScheduledTask -TaskName "RLDBCandidateSupervisor" -ErrorAction SilentlyContinue)
+$candidateListenerBeforeMigration = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
+if ($existingTaskBeforeMigration -or $legacyCandidateTasks.Count -gt 0 -or $candidateListenerBeforeMigration) {
   Write-Host "Stopping the existing candidate before database migrations..."
   # Ask the supervisor to close SQLite and its children before stopping the
   # scheduled-task host. Stopping the host first can orphan Node processes.
   Set-Content -LiteralPath (Join-Path $paths.Control "desired-state.txt") -Value "stopped" -Encoding ascii
+  foreach ($legacyCandidateTask in $legacyCandidateTasks) {
+    Write-Host "Disabling legacy duplicate candidate task $($legacyCandidateTask.TaskName)..."
+    Stop-ScheduledTask -TaskName $legacyCandidateTask.TaskName -ErrorAction SilentlyContinue
+    Disable-ScheduledTask -TaskName $legacyCandidateTask.TaskName -ErrorAction Stop | Out-Null
+  }
   for ($attempt = 1; $attempt -le 30; $attempt += 1) {
     $listener = Get-NetTCPConnection -LocalAddress "127.0.0.1" -LocalPort $BackendPort -State Listen -ErrorAction SilentlyContinue
     if (-not $listener) { break }
     Start-Sleep -Seconds 1
   }
-  Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+  if ($existingTaskBeforeMigration) {
+    Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+  }
 
   # The scheduled-task host does not own the detached Node supervisor process,
   # so stop every still-running process rooted under this candidate even when
@@ -281,6 +290,18 @@ if ($tunnelRequested -and -not $sitePasswordHash) {
     $secureSitePassword = $null
   }
 }
+$localApiToken = [string]$existingConfig.localApiToken
+if (-not $localApiToken) {
+  $localApiToken = [Environment]::GetEnvironmentVariable("LOCAL_API_TOKEN", "User")
+}
+if ($tunnelRequested -and -not $localApiToken) {
+  throw "Candidate public-origin routing requires LOCAL_API_TOKEN in the existing config or installer user's environment."
+}
+$telemetryToken = [string]$existingConfig.telemetryToken
+if (-not $telemetryToken) {
+  $telemetryTokenBytes = New-CryptographicRandomBytes 32
+  $telemetryToken = [Convert]::ToBase64String($telemetryTokenBytes)
+}
 $serviceConfig = [ordered]@{
   applicationVersion = $applicationVersion
   schemaVersion = "0010_normalize_query_component_presence"
@@ -303,6 +324,8 @@ $serviceConfig = [ordered]@{
   updateDataRoot = $paths.UpdateData
   sitePasswordHash = $sitePasswordHash
   siteSessionSecret = $sessionSecret
+  localApiToken = $localApiToken
+  telemetryToken = $telemetryToken
   tunnelEnabled = $tunnelRequested
   tunnelId = $effectiveTunnelId
   tunnelHostname = $effectiveTunnelHostname

@@ -45,6 +45,7 @@ const services = [
       RLDB_TELEMETRY_DB_PATH: config.telemetryDatabasePath,
       RLDB_APPLICATION_VERSION: config.applicationVersion,
       RLDB_SCHEMA_VERSION: config.schemaVersion,
+      RLDB_TELEMETRY_TOKEN: config.telemetryToken || "",
     },
   },
   {
@@ -60,6 +61,8 @@ const services = [
       RLDB_APPLICATION_VERSION: config.applicationVersion,
       RLDB_SCHEMA_VERSION: config.schemaVersion,
       RLDB_RUNTIME_MODE: "candidate-service",
+      LOCAL_API_TOKEN: config.localApiToken || process.env.LOCAL_API_TOKEN || "",
+      TELEMETRY_TOKEN: config.telemetryToken || "",
       STATS_SITE_PASSWORD_HASH: config.sitePasswordHash || "",
       STATS_SITE_SESSION_SECRET: config.siteSessionSecret || "",
     },
