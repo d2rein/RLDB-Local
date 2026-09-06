@@ -3,7 +3,7 @@ import { performance } from "node:perf_hooks";
 
 const MEBIBYTE = 1024 * 1024;
 const DEFAULT_CACHE_MIB = 256;
-const DEFAULT_MMAP_MIB = 1024;
+const DEFAULT_MMAP_MIB = 0;
 
 function boundedInteger(value, fallback, minimum, maximum, name) {
   const parsed = value === undefined ? fallback : Number(value);
@@ -197,9 +197,9 @@ export class SqliteD1Database {
     // reserve the full amount. The previous 64 MiB bound repeatedly evicted
     // pages needed by the broad player-query families.
     this.#database.exec(`PRAGMA cache_size = -${cacheMiB * 1024}`);
-    // mmap_size reserves virtual address space rather than eagerly reading or
-    // allocating the mapped bytes. Read-heavy analytical queries can then use
-    // the operating system page cache without an extra SQLite heap copy.
+    // Keep memory mapping configurable but disabled by default. Cold random
+    // analytical reads were substantially slower through Windows mapped-file
+    // faults than through SQLite's buffered reads in production preflight.
     this.#database.exec(`PRAGMA mmap_size = ${mmapMiB * MEBIBYTE}`);
     if (!options.readOnly) {
       this.#database.exec("PRAGMA journal_mode = WAL");

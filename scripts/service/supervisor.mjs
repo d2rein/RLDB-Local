@@ -58,7 +58,7 @@ const services = [
       RLDB_MAX_REQUEST_BODY_BYTES: String(config.maxRequestBodyBytes || 1048576),
       RLDB_MAX_QUERY_EXECUTION_MS: String(config.maxQueryExecutionMs || 150000),
       RLDB_SQLITE_CACHE_MIB: String(config.sqliteCacheMiB ?? 256),
-      RLDB_SQLITE_MMAP_MIB: String(config.sqliteMmapMiB ?? 1024),
+      RLDB_SQLITE_MMAP_MIB: String(config.sqliteMmapMiB ?? 0),
       TELEMETRY_ENDPOINT: `http://127.0.0.1:${config.telemetryPort}/events`,
       RLDB_APPLICATION_VERSION: config.applicationVersion,
       RLDB_SCHEMA_VERSION: config.schemaVersion,

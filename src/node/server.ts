@@ -12,7 +12,7 @@ const databasePath = path.resolve(
 const maxRequestBodyBytes = parseInteger(process.env.RLDB_MAX_REQUEST_BODY_BYTES, 1024 * 1024);
 const maxQueryExecutionMs = parseInteger(process.env.RLDB_MAX_QUERY_EXECUTION_MS, 150_000);
 const sqliteCacheMiB = parseBoundedInteger(process.env.RLDB_SQLITE_CACHE_MIB, 256, 16, 1024);
-const sqliteMmapMiB = parseBoundedInteger(process.env.RLDB_SQLITE_MMAP_MIB, 1024, 0, 2047);
+const sqliteMmapMiB = parseBoundedInteger(process.env.RLDB_SQLITE_MMAP_MIB, 0, 0, 2047);
 
 if (host !== "127.0.0.1" && host !== "localhost") {
   throw new Error(`RLDB_HOST must remain loopback-only; received ${host}`);
