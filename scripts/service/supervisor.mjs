@@ -142,6 +142,10 @@ async function maybeRunUpdate() {
 
   updateToken = nextUpdateToken;
   log("weekly_update_started", { trigger: manualRequested ? "manual" : "schedule", weekKey });
+  // A failed scheduled update must not be retried on every two-second
+  // reconciliation. Manual update requests remain available for an explicit
+  // retry after the failure has been investigated.
+  if (scheduled) await fsp.writeFile(weeklyUpdateMarkerPath, `${weekKey}\n`, "utf8");
   let servicesRestarted = false;
   try {
     await runUpdater("prepare");
@@ -159,7 +163,6 @@ async function maybeRunUpdate() {
       }
       throw new Error("Updated database failed its health check and was rolled back.");
     }
-    if (scheduled) await fsp.writeFile(weeklyUpdateMarkerPath, `${weekKey}\n`, "utf8");
     log("weekly_update_completed", { trigger: manualRequested ? "manual" : "schedule", weekKey });
   } catch (error) {
     log("weekly_update_failed", { name: error?.name ?? "Error", message: error?.message ?? String(error) });
@@ -176,7 +179,7 @@ function startMissingServices() {
 
 async function waitForBackendHealth(timeoutMs) {
   const deadline = Date.now() + timeoutMs;
-  const healthUrl = `http://127.0.0.1:${config.backendPort}/api/health`;
+  const healthUrl = `http://127.0.0.1:${config.backendPort}/api/ready`;
   while (Date.now() < deadline) {
     try {
       const response = await fetch(healthUrl, { signal: AbortSignal.timeout(3000) });
@@ -197,6 +200,10 @@ async function waitForBackendHealth(timeoutMs) {
     { scope: "team", statKey: "points_for", scoreHalf: "first" },
     { scope: "player", statKey: "tries", scoreHalf: "all" },
   ];
+  const trustedHeaders = {
+    "x-rldb-proxied-by": "cloudflare-public-site",
+    "x-rldb-token": config.localApiToken || "",
+  };
   for (const query of smokeQueries) {
     const params = new URLSearchParams(common);
     for (const [key, value] of Object.entries(query)) params.set(key, value);
@@ -204,6 +211,7 @@ async function waitForBackendHealth(timeoutMs) {
     if (remaining <= 0) return false;
     try {
       const response = await fetch(`http://127.0.0.1:${config.backendPort}/api/query?${params}`, {
+        headers: trustedHeaders,
         signal: AbortSignal.timeout(Math.min(remaining, 150000)),
       });
       if (!response.ok) return false;
