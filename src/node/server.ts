@@ -11,6 +11,7 @@ const databasePath = path.resolve(
 );
 const maxRequestBodyBytes = parseInteger(process.env.RLDB_MAX_REQUEST_BODY_BYTES, 1024 * 1024);
 const maxQueryExecutionMs = parseInteger(process.env.RLDB_MAX_QUERY_EXECUTION_MS, 150_000);
+const readinessTimeoutMs = parseInteger(process.env.RLDB_READINESS_TIMEOUT_MS, 30_000);
 const sqliteCacheMiB = parseBoundedInteger(process.env.RLDB_SQLITE_CACHE_MIB, 256, 16, 1024);
 const sqliteMmapMiB = parseBoundedInteger(process.env.RLDB_SQLITE_MMAP_MIB, 0, 0, 2047);
 
@@ -55,6 +56,7 @@ type QueuedRequest = {
   enqueuedAtMs: number;
   startedAtMs?: number;
   deadline?: ReturnType<typeof setTimeout>;
+  removeDisconnectListeners?: () => void;
 };
 
 let queryWorker: Worker | null = null;
@@ -73,6 +75,10 @@ const server = http.createServer(async (incoming, outgoing) => {
     writeHealthResponse(outgoing);
     return;
   }
+  if (requestUrl.pathname === "/api/ready") {
+    await writeReadinessResponse(outgoing);
+    return;
+  }
 
   try {
     const request = await serializeRequest(incoming, requestUrl);
@@ -81,6 +87,7 @@ const server = http.createServer(async (incoming, outgoing) => {
 
     const cancel = () => {
       if (outgoing.writableEnded) return;
+      queued.removeDisconnectListeners?.();
       if (activeRequest === queued) {
         restartQueryWorker("client_disconnected");
       } else {
@@ -91,6 +98,12 @@ const server = http.createServer(async (incoming, outgoing) => {
     incoming.once("aborted", cancel);
     incoming.socket.once("close", cancel);
     outgoing.once("close", cancel);
+    queued.removeDisconnectListeners = () => {
+      incoming.off("aborted", cancel);
+      incoming.socket.off("close", cancel);
+      outgoing.off("close", cancel);
+      queued.removeDisconnectListeners = undefined;
+    };
     dispatchNext();
   } catch (error) {
     writeError(outgoing, error);
@@ -176,6 +189,7 @@ function startQueryWorker() {
     const completedRequest = activeRequest;
     const { outgoing } = completedRequest;
     clearActiveDeadline(completedRequest);
+    completedRequest.removeDisconnectListeners?.();
     activeRequest = null;
     if (!outgoing.destroyed) {
       outgoing.statusCode = message.status;
@@ -247,6 +261,7 @@ function failActiveRequest(error: Error, statusCode = 500) {
   if (!activeRequest) return;
   const { outgoing } = activeRequest;
   clearActiveDeadline(activeRequest);
+  activeRequest.removeDisconnectListeners?.();
   activeRequest = null;
   if (!outgoing.destroyed) writeError(outgoing, error, statusCode);
 }
@@ -286,6 +301,60 @@ function writeHealthResponse(outgoing: http.ServerResponse) {
     },
     checked_at_utc: new Date().toISOString(),
   }, null, 2));
+}
+
+async function writeReadinessResponse(outgoing: http.ServerResponse) {
+  const controller = new AbortController();
+  const deadline = setTimeout(() => controller.abort(), readinessTimeoutMs);
+  deadline.unref();
+  try {
+    const response = await fetch(`http://${host}:${port}/api/meta/bootstrap?readiness=${Date.now()}`, {
+      headers: {
+        "cache-control": "no-cache",
+        "x-rldb-token": environment.LOCAL_API_TOKEN,
+        "x-rldb-proxied-by": "cloudflare-public-site",
+      },
+      signal: controller.signal,
+    });
+    const payload = await response.json() as {
+      app?: { status?: string };
+      filterOptions?: { competitions?: unknown[] };
+      statDefinitions?: unknown[];
+      error?: string;
+    };
+    const ready = response.ok
+      && Boolean(payload.app?.status)
+      && Array.isArray(payload.filterOptions?.competitions)
+      && Array.isArray(payload.statDefinitions);
+    outgoing.writeHead(ready ? 200 : 503, {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+    });
+    outgoing.end(JSON.stringify({
+      ok: ready,
+      service: "rugby-league-stats-database",
+      bootstrap: ready ? "ready" : "invalid",
+      error: ready ? undefined : payload.error || `Bootstrap returned HTTP ${response.status}.`,
+      checked_at_utc: new Date().toISOString(),
+    }));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!outgoing.headersSent) {
+      outgoing.writeHead(503, {
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "no-store",
+      });
+    }
+    outgoing.end(JSON.stringify({
+      ok: false,
+      service: "rugby-league-stats-database",
+      bootstrap: "unavailable",
+      error: message,
+      checked_at_utc: new Date().toISOString(),
+    }));
+  } finally {
+    clearTimeout(deadline);
+  }
 }
 
 function writeError(outgoing: http.ServerResponse, error: unknown, statusCode = 500) {
