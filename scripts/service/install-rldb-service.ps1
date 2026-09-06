@@ -302,6 +302,16 @@ if (-not $telemetryToken) {
   $telemetryTokenBytes = New-CryptographicRandomBytes 32
   $telemetryToken = [Convert]::ToBase64String($telemetryTokenBytes)
 }
+$effectiveSqliteCacheMiB = 256
+$effectiveSqliteMmapMiB = 1024
+if ($null -ne $existingConfig) {
+  if ([int]$existingConfig.sqliteCacheMiB -ge 16) {
+    $effectiveSqliteCacheMiB = [int]$existingConfig.sqliteCacheMiB
+  }
+  if ($null -ne $existingConfig.PSObject.Properties["sqliteMmapMiB"]) {
+    $effectiveSqliteMmapMiB = [int]$existingConfig.sqliteMmapMiB
+  }
+}
 $serviceConfig = [ordered]@{
   applicationVersion = $applicationVersion
   schemaVersion = "0010_normalize_query_component_presence"
@@ -316,6 +326,8 @@ $serviceConfig = [ordered]@{
   telemetryPort = $TelemetryPort
   maxRequestBodyBytes = 1048576
   maxQueryExecutionMs = 150000
+  sqliteCacheMiB = $effectiveSqliteCacheMiB
+  sqliteMmapMiB = $effectiveSqliteMmapMiB
   updateEnabled = $true
   updateDayOfWeek = 1
   updateHourLocal = 1

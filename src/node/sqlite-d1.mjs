@@ -1,6 +1,18 @@
 import { DatabaseSync } from "node:sqlite";
 import { performance } from "node:perf_hooks";
 
+const MEBIBYTE = 1024 * 1024;
+const DEFAULT_CACHE_MIB = 256;
+const DEFAULT_MMAP_MIB = 1024;
+
+function boundedInteger(value, fallback, minimum, maximum, name) {
+  const parsed = value === undefined ? fallback : Number(value);
+  if (!Number.isInteger(parsed) || parsed < minimum || parsed > maximum) {
+    throw new RangeError(`${name} must be an integer between ${minimum} and ${maximum}.`);
+  }
+  return parsed;
+}
+
 function normalizeBinding(value) {
   if (typeof value === "boolean") return value ? 1 : 0;
   if (value instanceof ArrayBuffer) return new Uint8Array(value);
@@ -167,8 +179,11 @@ export class SqliteD1PreparedStatement {
 export class SqliteD1Database {
   #database;
   #slowQueryPlanThresholdMs;
+  #runtimeConfiguration;
 
   constructor(databasePath, options = {}) {
+    const cacheMiB = boundedInteger(options.cacheMiB, DEFAULT_CACHE_MIB, 16, 1024, "cacheMiB");
+    const mmapMiB = boundedInteger(options.mmapMiB, DEFAULT_MMAP_MIB, 0, 2047, "mmapMiB");
     this.#database = new DatabaseSync(databasePath, {
       readOnly: Boolean(options.readOnly),
       enableForeignKeyConstraints: true,
@@ -177,11 +192,26 @@ export class SqliteD1Database {
     this.#slowQueryPlanThresholdMs = Math.max(0, Number(options.slowQueryPlanThresholdMs ?? 5000));
     this.#database.exec("PRAGMA busy_timeout = 5000");
     this.#database.exec("PRAGMA temp_store = MEMORY");
-    this.#database.exec("PRAGMA cache_size = -65536");
+    // Negative cache_size values are kibibytes. This is an upper bound and
+    // SQLite allocates cache pages on demand, so an idle worker does not
+    // reserve the full amount. The previous 64 MiB bound repeatedly evicted
+    // pages needed by the broad player-query families.
+    this.#database.exec(`PRAGMA cache_size = -${cacheMiB * 1024}`);
+    // mmap_size reserves virtual address space rather than eagerly reading or
+    // allocating the mapped bytes. Read-heavy analytical queries can then use
+    // the operating system page cache without an extra SQLite heap copy.
+    this.#database.exec(`PRAGMA mmap_size = ${mmapMiB * MEBIBYTE}`);
     if (!options.readOnly) {
       this.#database.exec("PRAGMA journal_mode = WAL");
       this.#database.exec("PRAGMA synchronous = NORMAL");
     }
+    this.#runtimeConfiguration = Object.freeze({
+      cacheMiB,
+      cacheKiB: Math.abs(Number(this.#database.prepare("PRAGMA cache_size").get()?.cache_size ?? 0)),
+      requestedMmapMiB: mmapMiB,
+      effectiveMmapBytes: Number(this.#database.prepare("PRAGMA mmap_size").get()?.mmap_size ?? 0),
+      tempStore: Number(this.#database.prepare("PRAGMA temp_store").get()?.temp_store ?? 0),
+    });
   }
 
   prepare(sql) {
@@ -200,5 +230,9 @@ export class SqliteD1Database {
 
   close() {
     this.#database.close();
+  }
+
+  runtimeConfiguration() {
+    return { ...this.#runtimeConfiguration };
   }
 }

@@ -11,6 +11,8 @@ const databasePath = path.resolve(
 );
 const maxRequestBodyBytes = parseInteger(process.env.RLDB_MAX_REQUEST_BODY_BYTES, 1024 * 1024);
 const maxQueryExecutionMs = parseInteger(process.env.RLDB_MAX_QUERY_EXECUTION_MS, 150_000);
+const sqliteCacheMiB = parseBoundedInteger(process.env.RLDB_SQLITE_CACHE_MIB, 256, 16, 1024);
+const sqliteMmapMiB = parseBoundedInteger(process.env.RLDB_SQLITE_MMAP_MIB, 1024, 0, 2047);
 
 if (host !== "127.0.0.1" && host !== "localhost") {
   throw new Error(`RLDB_HOST must remain loopback-only; received ${host}`);
@@ -57,6 +59,7 @@ type QueuedRequest = {
 
 let queryWorker: Worker | null = null;
 let workerReady = false;
+let workerSqliteConfiguration: Record<string, number> | null = null;
 let nextRequestId = 1;
 let activeRequest: QueuedRequest | null = null;
 const requestQueue: QueuedRequest[] = [];
@@ -150,13 +153,19 @@ async function readBody(incoming: http.IncomingMessage): Promise<Uint8Array> {
 
 function startQueryWorker() {
   workerReady = false;
+  workerSqliteConfiguration = null;
   const worker = new Worker(new URL("./request-worker.mjs", import.meta.url), {
-    workerData: { databasePath, environment },
+    workerData: {
+      databasePath,
+      environment,
+      sqliteOptions: { cacheMiB: sqliteCacheMiB, mmapMiB: sqliteMmapMiB },
+    },
   });
   queryWorker = worker;
 
-  worker.on("message", (message: { type: string } | SerializedResponse) => {
+  worker.on("message", (message: { type: string; sqlite?: Record<string, number> } | SerializedResponse) => {
     if ("type" in message && (message.type === "ready" || message.type === "ready_for_next")) {
+      if (message.type === "ready" && message.sqlite) workerSqliteConfiguration = message.sqlite;
       workerReady = true;
       dispatchNext();
       return;
@@ -224,6 +233,7 @@ function restartQueryWorker(reason: string, statusCode = 500) {
   const worker = queryWorker;
   queryWorker = null;
   workerReady = false;
+  workerSqliteConfiguration = null;
   const error = reason === "server_query_timeout"
     ? new Error(`Query exceeded the ${Math.round(maxQueryExecutionMs / 1000)} second safety limit and was cancelled. The search service has recovered; narrower filters may complete faster.`)
     : new Error(`Query cancelled: ${reason}.`);
@@ -259,7 +269,14 @@ function writeHealthResponse(outgoing: http.ServerResponse) {
   outgoing.end(JSON.stringify({
     ok: healthy,
     service: "rugby-league-stats-database",
-    database: { configured: true, reachable: healthy },
+    database: {
+      configured: true,
+      reachable: healthy,
+      sqlite: workerSqliteConfiguration || {
+        cacheMiB: sqliteCacheMiB,
+        requestedMmapMiB: sqliteMmapMiB,
+      },
+    },
     query_worker: {
       ready: workerReady,
       busy,
@@ -285,6 +302,19 @@ function writeError(outgoing: http.ServerResponse, error: unknown, statusCode = 
 function parseInteger(value: string | undefined, fallback: number): number {
   const parsed = Number.parseInt(value || "", 10);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parseBoundedInteger(
+  value: string | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number
+): number {
+  const parsed = value === undefined || value === "" ? fallback : Number(value);
+  if (!Number.isInteger(parsed) || parsed < minimum || parsed > maximum) {
+    throw new Error(`SQLite setting must be an integer between ${minimum} and ${maximum}; received ${value}.`);
+  }
+  return parsed;
 }
 
 async function shutdown(signal: string) {

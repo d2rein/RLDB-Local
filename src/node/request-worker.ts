@@ -6,6 +6,10 @@ import { SqliteD1Database } from "./sqlite-d1.mjs";
 type WorkerConfiguration = {
   databasePath: string;
   environment: Record<string, string>;
+  sqliteOptions: {
+    cacheMiB: number;
+    mmapMiB: number;
+  };
 };
 
 type SerializedRequest = {
@@ -17,7 +21,7 @@ type SerializedRequest = {
 };
 
 const configuration = workerData as WorkerConfiguration;
-const database = new SqliteD1Database(configuration.databasePath);
+const database = new SqliteD1Database(configuration.databasePath, configuration.sqliteOptions);
 const environment = { ...configuration.environment, DB: database };
 const pendingBackgroundTasks = new Set<Promise<unknown>>();
 const maintenanceInterval = 10;
@@ -94,7 +98,7 @@ parentPort?.on("message", async (message: SerializedRequest) => {
   parentPort?.postMessage({ type: "ready_for_next" });
 });
 
-parentPort?.postMessage({ type: "ready" });
+parentPort?.postMessage({ type: "ready", sqlite: database.runtimeConfiguration() });
 
 process.once("SIGTERM", async () => {
   await Promise.allSettled([...pendingBackgroundTasks]);

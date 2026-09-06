@@ -71,6 +71,26 @@ test("slow-select diagnostics include a bounded SQLite query plan", async () => 
   }
 });
 
+test("bounded cache and memory-map settings are applied and observable", () => {
+  const { database, cleanup } = fixture({ cacheMiB: 32, mmapMiB: 8 });
+  try {
+    const configuration = database.runtimeConfiguration();
+    assert.equal(configuration.cacheMiB, 32);
+    assert.equal(configuration.cacheKiB, 32 * 1024);
+    assert.equal(configuration.requestedMmapMiB, 8);
+    assert.ok(configuration.effectiveMmapBytes >= 0);
+    assert.ok(configuration.effectiveMmapBytes <= 8 * 1024 * 1024);
+    assert.equal(configuration.tempStore, 2);
+  } finally {
+    cleanup();
+  }
+});
+
+test("unsafe SQLite memory settings are rejected", () => {
+  assert.throws(() => fixture({ cacheMiB: 2048 }), /cacheMiB/);
+  assert.throws(() => fixture({ mmapMiB: -1 }), /mmapMiB/);
+});
+
 test("missing rows return null and SQLite failures retain D1 context", async () => {
   const { database, cleanup } = fixture();
   try {
