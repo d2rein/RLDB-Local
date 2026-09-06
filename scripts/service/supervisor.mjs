@@ -116,10 +116,13 @@ async function reconcile() {
       restartToken = nextRestartToken;
       await stopAll("restart_requested");
     }
-    await maybeRunUpdate();
+    // Keep the API available while the updater prepares its staging copy.
+    // Promotion still stops the services explicitly for the short database
+    // swap, but a supervisor start must not wait behind a long preparation.
     for (const service of services) {
       if (!children.get(service.name)?.process) startService(service);
     }
+    await maybeRunUpdate();
   }
   await writeStatus(desiredState);
 }
