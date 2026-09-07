@@ -139,7 +139,6 @@ const API_MAX_CONDITIONS = 12;
 const API_MAX_QUERYSTRING_LENGTH = 4000;
 const API_MAX_EXPORT_ROWS = 500000;
 const DB_HEALTHCHECK_TIMEOUT_MS = 0;
-const BOOTSTRAP_CACHE_TTL_MS = 5 * 60 * 1000;
 const PLAYER_OPTIONS_CACHE_TTL_MS = 60 * 60 * 1000;
 const SITE_AUTH_COOKIE_NAME = "rldb_site_session";
 const SITE_AUTH_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -3641,8 +3640,8 @@ async function runFullResultsPlayerAggregateFastPath(
         SUM(a.total_value) AS total_value,
         SUM(a.recorded_games) AS recorded_games,
         MAX(a.total_games) AS total_games,
-        MIN(COALESCE(a.first_season, a.season)) AS first_season,
-        MAX(COALESCE(a.last_season, a.season)) AS last_season
+        MIN(a.season) AS first_season,
+        MAX(a.season) AS last_season
       FROM player_stat_aggregates a
       LEFT JOIN players p ON p.player_id = a.player_id
       WHERE a.source IN (${sources.map(() => "?").join(", ")})
@@ -3722,36 +3721,22 @@ async function runFullResultsPlayerAggregateFastPath(
       WITH aggregated AS (
         ${aggregateSql}
       )
-      SELECT *
+      SELECT *, COUNT(*) OVER() AS "__total_rows"
       FROM aggregated
       ORDER BY ${quotedIdentifier(safeSortColumn)} ${safeSortDirection}, player ASC
       LIMIT ? OFFSET ?
     `
     : aggregateSql;
-  const countSql = canPageInSql
-    ? `
-      WITH aggregated AS (
-        ${aggregateSql}
-      )
-      SELECT COUNT(*) AS count
-      FROM aggregated
-    `
-    : null;
-
   const result = await db.prepare(sql).bind(
     ...binds,
     ...playerFilterBinds,
     ...(canPageInSql ? [pageSize, offset] : []),
   ).all<QueryRow>();
-  const countResult = countSql
-    ? await db.prepare(countSql).bind(
-        ...binds,
-        ...playerFilterBinds,
-      ).first<{ count: number }>()
-    : null;
+  const totalRows = canPageInSql ? Number(result.results?.[0]?.__total_rows ?? 0) : undefined;
 
   const rows = (result.results ?? []).map((row) => {
-    const hydrated: QueryRow = { ...row };
+    const { __total_rows, ...publicRow } = row;
+    const hydrated: QueryRow = { ...publicRow };
     hydrated.games_played = hydrated.games;
     for (const definition of statDefinitions) {
       const recipe = getDerivedRecipe("player", definition.statKey);
@@ -3774,7 +3759,7 @@ async function runFullResultsPlayerAggregateFastPath(
     ok: true,
     summary: `Loaded ${rows.length} player ${format} aggregate rows for full-results from precomputed season aggregates.`,
     rows,
-    totalRows: countResult ? Number(countResult.count ?? rows.length) : undefined,
+    totalRows,
   };
 }
 
@@ -4351,19 +4336,33 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
   const statAggregateSelects: string[] = [];
   const statValueAliases = new Map<string, string>();
   const statIncludedAliases = new Map<string, string>();
+  const usesCompactComponents = rawStatKeys.some((statKey) =>
+    PLAYER_MATCH_QUERY_COMPONENT_COLUMNS.has(statKey)
+    || Boolean(getDerivedRecipe("player", statKey)?.components.every((component) =>
+      PLAYER_MATCH_QUERY_COMPONENT_COLUMNS.has(component)
+    ))
+  );
 
   rawStatKeys.forEach((statKey) => {
     const valueAlias = quotedIdentifier(`v_${statKey}`);
     const includedAlias = quotedIdentifier(`i_${statKey}`);
     const jsonPath = quotedSqlString(statJsonPath(statKey));
-    const jsonValue = `json_extract(s.stats_json, ${jsonPath})`;
+    const compactValue = playerQueryStatExpression(statKey);
+    const usesCompactValue = compactValue.binds.length === 0;
+    const valueExpression = usesCompactValue
+      ? compactValue.sql
+      : `CAST(json_extract(s.stats_json, ${jsonPath}) AS REAL)`;
     statValueAliases.set(statKey, valueAlias);
     statIncludedAliases.set(statKey, includedAlias);
 
-    statValueSelects.push(`COALESCE(CAST(${jsonValue} AS REAL), 0) AS ${valueAlias}`);
+    statValueSelects.push(`COALESCE(${valueExpression}, 0) AS ${valueAlias}`);
 
     if (missingStrategyForStat(statKey) === "zero_if_missing") {
       statIncludedSelects.push(`1 AS ${includedAlias}`);
+    } else if (statKey === "minutes_played" && usesCompactValue) {
+      statIncludedSelects.push(
+        `CASE WHEN s.season >= ${firstConsistentSeasonForStat(statKey)} THEN 1 WHEN d.minutes_played_present = 1 THEN 1 ELSE 0 END AS ${includedAlias}`
+      );
     } else {
       statIncludedSelects.push(
         `CASE WHEN s.season >= ${firstConsistentSeasonForStat(statKey)} THEN 1 WHEN json_type(s.stats_json, ${jsonPath}) IS NOT NULL THEN 1 ELSE 0 END AS ${includedAlias}`
@@ -4405,25 +4404,43 @@ async function runFullResultsPlayerMatchAggregatePagedPath(
     ...playerFilters.binds,
   ];
 
+  const needsClub = format === "club" || format === "match" || filters.team !== "Any";
+  const needsOpposition = format === "opposition" || format === "match" || filters.opponent !== "Any";
+  const needsVenue = format === "ground" || format === "match" || filters.venue !== "Any";
+  const needsCompetition = filters.competition !== "Any";
+  const needsMatchDetails = format === "match";
+  const clubExpression = needsClub ? "tt.canonical_name" : "NULL";
+  const oppositionExpression = needsOpposition ? "COALESCE(ot.canonical_name, 'Unknown')" : "NULL";
+  const venueExpression = needsVenue ? "COALESCE(v.canonical_name, 'Unknown')" : "NULL";
+  const roundExpression = needsMatchDetails ? "m.round_label" : "NULL";
+  const matchReferenceExpression = needsMatchDetails
+    ? "COALESCE(m.match_date_local_text, m.match_date_utc)"
+    : "NULL";
+  const matchSortExpression = needsMatchDetails
+    ? matchSortKeySql("m.match_date_utc", "m.match_date_local_text")
+    : "NULL";
+
   const baseSql = `
     WITH base AS (
       SELECT
         COALESCE(p.display_name, s.player_name_raw) AS player,
-        tt.canonical_name AS club_name,
+        ${clubExpression} AS club_name,
         s.season,
         s.match_id,
-        m.round_label,
-        COALESCE(ot.canonical_name, 'Unknown') AS opposition_name,
-        COALESCE(v.canonical_name, 'Unknown') AS venue_name,
-        COALESCE(m.match_date_local_text, m.match_date_utc) AS match_reference,
-        ${matchSortKeySql("m.match_date_utc", "m.match_date_local_text")} AS match_sort_key${[...statValueSelects, ...statIncludedSelects].length ? `,\n        ${[...statValueSelects, ...statIncludedSelects].join(",\n        ")}` : ""}
+        ${roundExpression} AS round_label,
+        ${oppositionExpression} AS opposition_name,
+        ${venueExpression} AS venue_name,
+        ${matchReferenceExpression} AS match_reference,
+        ${matchSortExpression} AS match_sort_key${[...statValueSelects, ...statIncludedSelects].length ? `,\n        ${[...statValueSelects, ...statIncludedSelects].join(",\n        ")}` : ""}
       FROM player_match_summary s
+      ${usesCompactComponents ? `JOIN player_match_query_components d
+        ON d.player_match_summary_id = s.player_match_summary_id` : ""}
       LEFT JOIN players p ON p.player_id = s.player_id
       JOIN matches m ON m.match_id = s.match_id
-      JOIN competitions c ON c.competition_id = m.competition_id
-      JOIN teams tt ON tt.team_id = s.team_id
-      LEFT JOIN teams ot ON ot.team_id = s.opponent_team_id
-      LEFT JOIN venues v ON v.venue_id = m.venue_id
+      ${needsCompetition ? "JOIN competitions c ON c.competition_id = m.competition_id" : ""}
+      ${needsClub ? "JOIN teams tt ON tt.team_id = s.team_id" : ""}
+      ${needsOpposition ? "LEFT JOIN teams ot ON ot.team_id = s.opponent_team_id" : ""}
+      ${needsVenue ? "LEFT JOIN venues v ON v.venue_id = m.venue_id" : ""}
       WHERE s.season BETWEEN ? AND ?
       ${playerFilters.sql}
     )
@@ -13130,7 +13147,10 @@ const applicationWorker = {
 
     if (url.pathname === "/api/meta/bootstrap") {
       const nowMs = Date.now();
-      if (bootstrapResponseCache && nowMs - bootstrapResponseCache.cachedAtMs < BOOTSTRAP_CACHE_TTL_MS) {
+      // A database promotion restarts the worker, so metadata remains valid for
+      // the process lifetime. Avoid periodically re-reading cold text indexes
+      // merely because the site has been idle for five minutes.
+      if (bootstrapResponseCache) {
         const cached = cloneBootstrap(bootstrapResponseCache.value);
         cached.app.status = "seeded-local-db-cached";
         return json(cached, { headers: { "cache-control": "no-store" } });

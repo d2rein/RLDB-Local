@@ -308,7 +308,7 @@ if (-not $telemetryToken) {
 }
 $serviceConfig = [ordered]@{
   applicationVersion = $applicationVersion
-  schemaVersion = "0010_normalize_query_component_presence"
+  schemaVersion = "0011_query_covering_indexes"
   releaseRoot = $releaseRoot
   nodePath = $nodePath
   databasePath = $databasePath

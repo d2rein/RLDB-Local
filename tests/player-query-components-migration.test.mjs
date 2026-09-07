@@ -13,6 +13,10 @@ const presenceMigrationPath = resolve(
   import.meta.dirname,
   "../migrations/application/0010_normalize_query_component_presence.sql",
 );
+const coveringIndexMigrationPath = resolve(
+  import.meta.dirname,
+  "../migrations/application/0011_query_covering_indexes.sql",
+);
 
 test("player query components backfill and remain synchronized", () => {
   const databasePath = resolve(tmpdir(), `rldb-query-components-${process.pid}-${Date.now()}.sqlite`);
@@ -68,6 +72,44 @@ test("player query components backfill and remain synchronized", () => {
       database.prepare("SELECT COUNT(*) AS count FROM player_match_query_components").get().count,
       0,
     );
+  } finally {
+    database.close();
+    rmSync(databasePath, { force: true });
+  }
+});
+
+test("query covering indexes support bootstrap text and season aggregate reads", () => {
+  const databasePath = resolve(tmpdir(), `rldb-query-indexes-${process.pid}-${Date.now()}.sqlite`);
+  const database = new DatabaseSync(databasePath);
+  try {
+    database.exec(`
+      CREATE TABLE team_match_stat_values (
+        team_match_summary_id INTEGER NOT NULL,
+        stat_key TEXT NOT NULL,
+        stat_value_text TEXT,
+        stat_value_num REAL
+      );
+      CREATE TABLE player_stat_aggregates (
+        source TEXT NOT NULL,
+        scope TEXT NOT NULL,
+        stat_key TEXT NOT NULL,
+        season INTEGER NOT NULL,
+        player_id INTEGER,
+        total_value REAL,
+        recorded_games INTEGER,
+        total_games INTEGER,
+        player_name_raw TEXT
+      );
+    `);
+    database.exec(readFileSync(coveringIndexMigrationPath, "utf8"));
+
+    const indexes = new Set(database.prepare(`
+      SELECT name
+      FROM sqlite_master
+      WHERE type = 'index'
+    `).all().map((row) => row.name));
+    assert.equal(indexes.has("idx_team_match_stat_values_key_text"), true);
+    assert.equal(indexes.has("idx_player_stat_aggregates_query_covering"), true);
   } finally {
     database.close();
     rmSync(databasePath, { force: true });
