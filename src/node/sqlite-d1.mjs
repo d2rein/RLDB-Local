@@ -2,7 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { performance } from "node:perf_hooks";
 
 const MEBIBYTE = 1024 * 1024;
-const DEFAULT_CACHE_MIB = 256;
+const DEFAULT_CACHE_MIB = 512;
 const DEFAULT_MMAP_MIB = 0;
 
 function boundedInteger(value, fallback, minimum, maximum, name) {
@@ -194,8 +194,9 @@ export class SqliteD1Database {
     this.#database.exec("PRAGMA temp_store = MEMORY");
     // Negative cache_size values are kibibytes. This is an upper bound and
     // SQLite allocates cache pages on demand, so an idle worker does not
-    // reserve the full amount. The previous 64 MiB bound repeatedly evicted
-    // pages needed by the broad player-query families.
+    // reserve the full amount. Production telemetry showed the common broad
+    // query working set reaching 350-370 MiB; a 256 MiB cap repeatedly
+    // evicted pages between otherwise identical requests.
     this.#database.exec(`PRAGMA cache_size = -${cacheMiB * 1024}`);
     // Keep memory mapping configurable but disabled by default. Cold random
     // analytical reads were substantially slower through Windows mapped-file

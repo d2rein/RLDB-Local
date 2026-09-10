@@ -9,7 +9,7 @@ param(
   [int]$BackendPort = 8899,
   [int]$TelemetryPort = 8890,
   [ValidateRange(16, 1024)]
-  [int]$SqliteCacheMiB = 256,
+  [int]$SqliteCacheMiB = 512,
   [ValidateRange(0, 2047)]
   [int]$SqliteMmapMiB = 0,
   [string]$CandidateTunnelId = "",

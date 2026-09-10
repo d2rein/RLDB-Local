@@ -12,7 +12,7 @@ const databasePath = path.resolve(
 const maxRequestBodyBytes = parseInteger(process.env.RLDB_MAX_REQUEST_BODY_BYTES, 1024 * 1024);
 const maxQueryExecutionMs = parseInteger(process.env.RLDB_MAX_QUERY_EXECUTION_MS, 150_000);
 const readinessTimeoutMs = parseInteger(process.env.RLDB_READINESS_TIMEOUT_MS, 30_000);
-const sqliteCacheMiB = parseBoundedInteger(process.env.RLDB_SQLITE_CACHE_MIB, 256, 16, 1024);
+const sqliteCacheMiB = parseBoundedInteger(process.env.RLDB_SQLITE_CACHE_MIB, 512, 16, 1024);
 const sqliteMmapMiB = parseBoundedInteger(process.env.RLDB_SQLITE_MMAP_MIB, 0, 0, 2047);
 
 if (host !== "127.0.0.1" && host !== "localhost") {
