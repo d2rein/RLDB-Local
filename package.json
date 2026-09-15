@@ -9,10 +9,11 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "start": "node dist/server.mjs",
-    "test": "node --test tests/sqlite-d1.test.mjs tests/player-query-components-migration.test.mjs",
+    "test": "node --test tests/sqlite-d1.test.mjs tests/player-query-components-migration.test.mjs tests/roster-assignment.test.mjs",
     "smoke": "node scripts/smoke-test.mjs",
     "parity": "node scripts/functional-parity.mjs",
     "audit:database": "node scripts/audit-database-parity.mjs",
+    "audit:current-season": "node scripts/audit-current-season-integrity.mjs",
     "audit:indexes": "node scripts/audit-proposed-indexes.mjs",
     "audit:player-aggregates": "node scripts/audit-player-aggregate-coverage.mjs",
     "db:migrate": "node scripts/apply-application-migrations.mjs",

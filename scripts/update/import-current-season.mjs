@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { decodeRosterPayload } from "./roster-assignment.mjs";
 
 const PLAYER_ALIASES = new Map([
   ["mins_played", "minutes_played"],
@@ -59,19 +60,6 @@ function roundEntries(payload, competition, season, kind) {
 }
 function indexRounds(entries) {
   return new Map(entries.flatMap((entry) => Object.entries(entry).map(([round, rows]) => [Number(round), rows])));
-}
-function splitRuns(players) {
-  const runs = []; let current = []; let previous = null;
-  for (const player of players) {
-    const number = Number(player.Number ?? 999);
-    if (current.length && number < previous) { runs.push(current); current = []; }
-    current.push(player); previous = number;
-  }
-  if (current.length) runs.push(current);
-  if (runs.length <= 1) return [runs.flat(), []];
-  if (runs.length === 2) return [runs[0], runs[1]];
-  const split = runs.length === 4 ? 2 : Math.ceil(runs.length / 2);
-  return [runs.slice(0, split).flat(), runs.slice(split).flat()];
 }
 function dedupePlayers(players) {
   const found = new Map();
@@ -272,8 +260,11 @@ try {
         if (homeStats.average_play_the_ball_speed !== null && homeStats.opposition_tackles_made > 0) homeStats.average_play_the_ball_speed_weighted_numerator = homeStats.average_play_the_ball_speed * homeStats.opposition_tackles_made;
         if (awayStats.average_play_the_ball_speed !== null && awayStats.opposition_tackles_made > 0) awayStats.average_play_the_ball_speed_weighted_numerator = awayStats.average_play_the_ball_speed * awayStats.opposition_tackles_made;
         const rawPlayers = playerByKey.get(sourceKey) ?? playerByKey.get(sourceKey.replace(/-v-/, "-v-"));
-        if (!rawPlayers?.length) throw new Error(`Missing player payload: ${sourceKey}`);
-        const [homeRoster, awayRoster] = splitRuns(rawPlayers).map(dedupePlayers);
+        if (rawPlayers === null || rawPlayers === undefined || (Array.isArray(rawPlayers) && rawPlayers.length === 0)) {
+          throw new Error(`Missing player payload: ${sourceKey}`);
+        }
+        const decodedRoster = decodeRosterPayload(rawPlayers, `${code} ${season} R${round} ${label}`);
+        const [homeRoster, awayRoster] = [decodedRoster.home, decodedRoster.away].map(dedupePlayers);
         const scoring = new Map([[homeId,{tries:0,goals:0,field_goals_1pt:0,field_goals_2pt:0}],[awayId,{tries:0,goals:0,field_goals_1pt:0,field_goals_2pt:0}]]);
         for (const [roster, teamId, opponentId, isHome] of [[homeRoster,homeId,awayId,1],[awayRoster,awayId,homeId,0]]) for (const player of roster) {
           const playerId = resolvePlayer(player.Name, source); const stats = buildPlayerStats(player); Object.assign(stats, meta);
@@ -327,19 +318,73 @@ try {
 } catch (error) { db.exec("ROLLBACK;"); throw error; }
 
 const invalidCurrentMatches = db.prepare(`WITH current_matches AS (
-    SELECT m.match_id FROM matches m JOIN competitions c ON c.competition_id=m.competition_id
+    SELECT m.match_id,m.home_team_id,m.away_team_id FROM matches m
+    JOIN competitions c ON c.competition_id=m.competition_id
     WHERE m.season=? AND c.code IN (${competitions.map(() => "?").join(",")})
-  ), team_counts AS (
-    SELECT t.match_id,COUNT(*) team_rows FROM team_match_summary t
-    JOIN current_matches m ON m.match_id=t.match_id GROUP BY t.match_id
-  ), player_counts AS (
-    SELECT p.match_id,COUNT(*) player_rows FROM player_match_summary p
-    JOIN current_matches m ON m.match_id=p.match_id GROUP BY p.match_id
+      AND EXISTS (SELECT 1 FROM player_match_summary p WHERE p.match_id=m.match_id)
+  ), player_audit AS (
+    SELECT m.match_id,
+      SUM(CASE WHEN p.team_id=m.home_team_id AND p.is_home=1 THEN 1 ELSE 0 END) home_rows,
+      SUM(CASE WHEN p.team_id=m.away_team_id AND p.is_home=0 THEN 1 ELSE 0 END) away_rows,
+      SUM(CASE WHEN (p.is_home=1 AND (p.team_id<>m.home_team_id OR p.opponent_team_id<>m.away_team_id))
+        OR (p.is_home=0 AND (p.team_id<>m.away_team_id OR p.opponent_team_id<>m.home_team_id))
+        OR p.is_home NOT IN (0,1) THEN 1 ELSE 0 END) bad_assignments,
+      SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM player_match_stat_values v
+        WHERE v.player_match_summary_id=p.player_match_summary_id) THEN 1 ELSE 0 END) missing_stats,
+      SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM player_match_query_components q
+        WHERE q.player_match_summary_id=p.player_match_summary_id) THEN 1 ELSE 0 END) missing_components
+    FROM current_matches m JOIN player_match_summary p ON p.match_id=m.match_id GROUP BY m.match_id
+  ), team_audit AS (
+    SELECT m.match_id,COUNT(t.team_match_summary_id) team_rows,
+      SUM(CASE WHEN (t.is_home=1 AND (t.team_id<>m.home_team_id OR t.opponent_team_id<>m.away_team_id))
+        OR (t.is_home=0 AND (t.team_id<>m.away_team_id OR t.opponent_team_id<>m.home_team_id))
+        OR t.is_home NOT IN (0,1) THEN 1 ELSE 0 END) bad_assignments,
+      SUM(CASE WHEN NOT EXISTS (SELECT 1 FROM team_match_stat_values v
+        WHERE v.team_match_summary_id=t.team_match_summary_id) THEN 1 ELSE 0 END) missing_stats
+    FROM current_matches m LEFT JOIN team_match_summary t ON t.match_id=m.match_id GROUP BY m.match_id
+  ), duplicate_jumpers AS (
+    SELECT match_id,COUNT(*) duplicate_groups FROM (
+      SELECT p.match_id,p.team_id,p.jumper_number FROM player_match_summary p
+      JOIN current_matches m ON m.match_id=p.match_id
+      WHERE p.jumper_number IS NOT NULL AND lower(COALESCE(p.position_label,'')) NOT LIKE '%reserve%'
+      GROUP BY p.match_id,p.team_id,p.jumper_number HAVING COUNT(*)>1
+    ) GROUP BY match_id
+  ), dual_side_players AS (
+    SELECT match_id,COUNT(*) dual_players FROM (
+      SELECT p.match_id,p.player_id FROM player_match_summary p
+      JOIN current_matches m ON m.match_id=p.match_id WHERE p.player_id IS NOT NULL
+      GROUP BY p.match_id,p.player_id HAVING COUNT(DISTINCT p.team_id)>1
+    ) GROUP BY match_id
   )
-  SELECT COUNT(*) AS count FROM player_counts p LEFT JOIN team_counts t ON t.match_id=p.match_id
-  WHERE COALESCE(t.team_rows,0)<>2 OR p.player_rows<20`).get(season, ...competitions).count;
-if (Number(invalidCurrentMatches) !== 0) {
-  throw new Error(`Current-season summary validation failed for ${invalidCurrentMatches} matches.`);
+  SELECT p.match_id,p.home_rows,p.away_rows,p.bad_assignments,p.missing_stats,p.missing_components,
+    t.team_rows,t.bad_assignments bad_team_assignments,t.missing_stats missing_team_stats,
+    COALESCE(d.duplicate_groups,0) duplicate_jumpers,COALESCE(x.dual_players,0) dual_players
+  FROM player_audit p JOIN team_audit t ON t.match_id=p.match_id
+  LEFT JOIN duplicate_jumpers d ON d.match_id=p.match_id
+  LEFT JOIN dual_side_players x ON x.match_id=p.match_id
+  WHERE p.home_rows NOT BETWEEN 17 AND 21 OR p.away_rows NOT BETWEEN 17 AND 21
+    OR ABS(p.home_rows-p.away_rows)>2 OR p.bad_assignments<>0 OR p.missing_stats<>0
+    OR p.missing_components<>0 OR t.team_rows<>2 OR t.bad_assignments<>0 OR t.missing_stats<>0
+    OR COALESCE(d.duplicate_groups,0)<>0 OR COALESCE(x.dual_players,0)<>0
+  ORDER BY p.match_id`).all(season, ...competitions);
+if (invalidCurrentMatches.length !== 0) {
+  throw new Error(`Current-season assignment validation failed: ${JSON.stringify(invalidCurrentMatches.slice(0, 20))}`);
+}
+const invalidScoring = db.prepare(`SELECT m.match_id,t.canonical_name team,s.team_score,
+    COALESCE(json_extract(s.stats_json,'$.tries'),0)*4
+      + COALESCE(json_extract(s.stats_json,'$.goals'),0)*2
+      + COALESCE(json_extract(s.stats_json,'$.field_goals_1pt'),0)
+      + COALESCE(json_extract(s.stats_json,'$.field_goals_2pt'),0)*2 attributed_points
+  FROM team_match_summary s JOIN matches m ON m.match_id=s.match_id
+  JOIN competitions c ON c.competition_id=m.competition_id JOIN teams t ON t.team_id=s.team_id
+  WHERE m.season=? AND c.code IN (${competitions.map(() => "?").join(",")})
+    AND s.team_score<>(COALESCE(json_extract(s.stats_json,'$.tries'),0)*4
+      + COALESCE(json_extract(s.stats_json,'$.goals'),0)*2
+      + COALESCE(json_extract(s.stats_json,'$.field_goals_1pt'),0)
+      + COALESCE(json_extract(s.stats_json,'$.field_goals_2pt'),0)*2)
+  ORDER BY m.match_id,s.is_home DESC`).all(season, ...competitions);
+if (invalidScoring.length !== 0) {
+  throw new Error(`Current-season scoring attribution validation failed: ${JSON.stringify(invalidScoring.slice(0, 20))}`);
 }
 const integrity = "targeted_current_season_checks_passed";
 db.exec("PRAGMA optimize;");
