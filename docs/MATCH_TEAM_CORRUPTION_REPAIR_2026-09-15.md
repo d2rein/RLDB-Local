@@ -56,4 +56,10 @@ npm.cmd run build
 npm.cmd run audit:current-season -- --database <database> --season 2026 --competitions NRL,NRLW
 ```
 
-Production installation and post-promotion verification should be recorded in the deployment log after the repaired database is promoted.
+## Production deployment
+
+On 2026-09-16, commit `854f91f79f6be97faf3f5d8c635419165269f12b` was installed with the standard elevated installer. The installer restored `RLDB-Direct-Node-Supervisor` under the restricted `DESKTOP-ASRAPT8\rldbsvc` account and verified the candidate and operational health endpoints.
+
+The installed supervisor then ran the normal staged weekly-update workflow. It prepared and validated the rebuilt database while the live API remained available, briefly stopped the candidate for promotion, retained the displaced database at `C:\RLDB\data\previous\rldb.sqlite`, and restarted the backend, telemetry service, and tunnel. Promotion completed at `2026-09-15T21:24:46.311Z`; both candidate and operational health checks returned HTTP 200.
+
+The independent current-season audit was rerun directly against `C:\RLDB\data\rldb.sqlite` after promotion. All 274 NRL/NRLW matches passed. Match 15491 has 19 stored source roster rows and 17 displayed active players per side, no duplicate active jumpers, 55 normalized team statistics per side, and correct 26-16 scoring attribution. An unauthenticated public HTTPS probe reached `rldb.drein.net` and received the expected HTTP 401 authentication challenge.
