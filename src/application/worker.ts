@@ -223,7 +223,6 @@ const PROXY_ELIGIBLE_PATHS = new Set([
   "/api/player-rank-cards",
   "/api/match-detail",
   "/api/season-index",
-  "/api/warg",
   "/api/export",
   "/api/query",
   "/api/query/full",
