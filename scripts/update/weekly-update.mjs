@@ -91,6 +91,9 @@ if (mode === "prepare") {
   await runNode(path.join(releaseRoot, "scripts", "update", "import-current-season.mjs"), [
     "--database", stagingPath, "--data-root", dataRoot, "--season", String(season), "--competitions", competitions.join(","),
   ]);
+  await runNode(path.join(releaseRoot, "scripts", "update", "materialize-warg.mjs"), [
+    "--database", stagingPath, "--start", "2001", "--end", String(season),
+  ]);
   // The importer exits successfully only after its targeted current-season checks pass.
   const before = inspectDatabase(livePath); const after = inspectDatabase(stagingPath);
   const beforeByCode = new Map(before.freshness.map((row) => [row.code, row]));

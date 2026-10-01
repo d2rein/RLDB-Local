@@ -3,6 +3,7 @@ import {
   handleWithQueryTelemetry,
   type QueryTelemetryEnv,
 } from "./query-telemetry";
+import { handleWargApi, renderWargPage } from "./warg";
 
 type Env = QueryTelemetryEnv & {
   DB?: D1Database;
@@ -222,6 +223,7 @@ const PROXY_ELIGIBLE_PATHS = new Set([
   "/api/player-rank-cards",
   "/api/match-detail",
   "/api/season-index",
+  "/api/warg",
   "/api/export",
   "/api/query",
   "/api/query/full",
@@ -13919,6 +13921,10 @@ const applicationWorker = {
       }
     }
 
+    if (url.pathname === "/api/warg") {
+      return handleWargApi(env.DB, url);
+    }
+
     if (url.pathname === "/api/player-profile") {
       const database = await getDatabase();
       if (!env.DB || !database.reachable) {
@@ -14007,6 +14013,14 @@ const applicationWorker = {
 
     if (url.pathname === "/season") {
       return html(renderSeasonPageShell());
+    }
+
+    if (url.pathname === "/warg") {
+      return html(renderWargPage(false));
+    }
+
+    if (url.pathname === "/warg/list") {
+      return html(renderWargPage(true));
     }
 
     const playerPage = url.pathname.match(/^\/player\/([^/]+)$/);
