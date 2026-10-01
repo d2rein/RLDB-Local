@@ -220,6 +220,12 @@ try {
   if ($LASTEXITCODE -ne 0) {
     throw "Application migrations exited with code $LASTEXITCODE."
   }
+  Write-Host "Materialising WARG-style player ratings..."
+  & $nodePath (Join-Path $releaseRoot "scripts\update\materialize-warg.mjs") `
+    --database $databasePath --start 2001 --end ([DateTime]::Now.Year)
+  if ($LASTEXITCODE -ne 0) {
+    throw "WARG materialisation exited with code $LASTEXITCODE."
+  }
 } catch {
   if ($candidateQuiescedForMigration) {
     Set-Content -LiteralPath (Join-Path $paths.Control "desired-state.txt") -Value "running" -Encoding ascii
@@ -308,7 +314,7 @@ if (-not $telemetryToken) {
 }
 $serviceConfig = [ordered]@{
   applicationVersion = $applicationVersion
-  schemaVersion = "0011_query_covering_indexes"
+  schemaVersion = "0012_warg_materialized"
   releaseRoot = $releaseRoot
   nodePath = $nodePath
   databasePath = $databasePath
