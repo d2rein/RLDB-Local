@@ -37,6 +37,18 @@ async function dashboard(db: D1Database, competition: string, season: number | n
     FROM warg_match_ratings ${filter.sql}
     ORDER BY game_warg DESC,match_date_utc DESC,player_name LIMIT 10
   `).bind(...filter.binds));
+  const finals = await rows(db.prepare(`
+    SELECT season,match_id,round_label,player_id,player_name,team_name,opponent_name,
+           score,position,role,game_warg AS warg
+    FROM warg_match_ratings ${filter.sql} AND is_finals=1
+    ORDER BY game_warg DESC,match_date_utc DESC,player_name LIMIT 10
+  `).bind(...filter.binds));
+  const grandFinals = await rows(db.prepare(`
+    SELECT season,match_id,round_label,player_id,player_name,team_name,opponent_name,
+           score,position,role,game_warg AS warg
+    FROM warg_match_ratings ${filter.sql} AND is_grand_final=1
+    ORDER BY game_warg DESC,match_date_utc DESC,player_name LIMIT 10
+  `).bind(...filter.binds));
   const seasonWhere = [filter.sql.replace(/^WHERE /, ""), average ? `games>=${seasonMinimum}` : ""].filter(Boolean);
   const seasons = await rows(db.prepare(`
     SELECT season,player_id,player_name,position,role,games,warg AS total_warg,
@@ -82,7 +94,7 @@ async function dashboard(db: D1Database, competition: string, season: number | n
       `).bind(competition, season, role));
     }
   }
-  return { games, seasons, careers, clubs, roles: roleRows };
+  return { games, finals, grandFinals, seasons, careers, clubs, roles: roleRows };
 }
 
 async function fullList(db: D1Database, url: URL): Promise<Record<string, unknown>> {
@@ -92,6 +104,7 @@ async function fullList(db: D1Database, url: URL): Promise<Record<string, unknow
   const season = Number.isInteger(seasonValue) && seasonValue >= 2001 ? seasonValue : null;
   const role = ROLES.includes(String(url.searchParams.get("role"))) ? String(url.searchParams.get("role")) : "";
   const average = url.searchParams.get("metric") === "average";
+  const stage = ["finals", "grand_final"].includes(String(url.searchParams.get("stage"))) ? String(url.searchParams.get("stage")) : "all";
   const seasonMinimum = competition === "NRLW" ? 3 : 10;
   const limit = Math.min(250, Math.max(10, Number(url.searchParams.get("limit") ?? "100") || 100));
   const page = Math.max(1, Number(url.searchParams.get("page") ?? "1") || 1);
@@ -101,8 +114,9 @@ async function fullList(db: D1Database, url: URL): Promise<Record<string, unknow
   let binds: unknown[] = [];
   if (view === "games") {
     const filter = competitionClause(competition, season);
-    sql = `SELECT season,match_id,round_label,player_id,player_name,team_name,opponent_name,score,position,role,game_warg AS warg FROM warg_match_ratings ${filter.sql} ORDER BY game_warg DESC,match_date_utc DESC,player_name LIMIT ? OFFSET ?`;
-    countSql = `SELECT COUNT(*) count FROM warg_match_ratings ${filter.sql}`;
+    const stageSql = stage === "grand_final" ? " AND is_grand_final=1" : stage === "finals" ? " AND is_finals=1" : "";
+    sql = `SELECT season,match_id,round_label,player_id,player_name,team_name,opponent_name,score,position,role,game_warg AS warg FROM warg_match_ratings ${filter.sql}${stageSql} ORDER BY game_warg DESC,match_date_utc DESC,player_name LIMIT ? OFFSET ?`;
+    countSql = `SELECT COUNT(*) count FROM warg_match_ratings ${filter.sql}${stageSql}`;
     binds = filter.binds;
   } else if (view === "clubs") {
     const filter = competitionClause(competition, season);
@@ -137,7 +151,7 @@ async function fullList(db: D1Database, url: URL): Promise<Record<string, unknow
   }
   const resultRows = await rows(db.prepare(sql).bind(...binds, limit, offset));
   const count = await db.prepare(countSql).bind(...binds).first<{ count: number }>();
-  return { view, competition, season, role, metric: average ? "average" : "total", page, pageSize: limit, totalRows: Number(count?.count ?? 0), rows: resultRows };
+  return { view, competition, season, role, stage, metric: average ? "average" : "total", page, pageSize: limit, totalRows: Number(count?.count ?? 0), rows: resultRows };
 }
 
 export async function handleWargApi(db: D1Database | undefined, url: URL): Promise<Response> {
@@ -152,7 +166,7 @@ export async function handleWargApi(db: D1Database | undefined, url: URL): Promi
     if (!meta.generated_at_utc) return response({ ok: false, error: "WARG ratings have not been materialised." }, 503);
     const years = await rows(db.prepare("SELECT DISTINCT season FROM warg_season_ratings WHERE competition_code=? ORDER BY season DESC").bind(competition));
     const data = mode === "list" ? await fullList(db, url) : await dashboard(db, competition, season, average);
-    return response({ ok: true, methodology: "WARG-style Taylor reproduction v0.2; not official Maroon Observer WARG", competition, metric: average ? "average" : "total", seasonMinimumGames: competition === "NRLW" ? 3 : 10, careerMinimumGames: 10, metadata: meta, years: years.map((row) => Number(row.season)), ...data });
+    return response({ ok: true, methodology: "WARG-style Taylor reproduction v0.3; not official Maroon Observer WARG", competition, metric: average ? "average" : "total", seasonMinimumGames: competition === "NRLW" ? 3 : 10, careerMinimumGames: 10, metadata: meta, years: years.map((row) => Number(row.season)), ...data });
   } catch (error) {
     return response({ ok: false, error: error instanceof Error ? error.message : String(error) }, 500);
   }
@@ -176,10 +190,10 @@ const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':
 const player=(r)=>'<a href="https://rldb.drein.net/player/'+encodeURIComponent(r.player_name)+'?competition='+competition+'">'+esc(r.player_name)+'</a>';
 const num=(v)=>Number(v||0).toFixed(2); const rankRows=(rows,kind)=>rows.map((r,i)=>'<tr><td class="rank">'+(i+1)+'</td><td>'+player(r)+(r.position?' <span title="Position">('+esc(r.position)+')</span>':'')+'</td>'+(kind==='game'?'<td><a href="https://rldb.drein.net/match/'+r.match_id+'">'+esc(r.season+' '+r.round_label)+'</a></td><td>'+esc(r.team_name)+'</td>':kind==='club'?'<td>'+esc(r.team_name)+'</td>':r.season?'<td>'+esc(r.season)+'</td>':'')+'<td class="value">'+num(r.warg)+'</td></tr>').join('');
 function table(title,rows,kind,href,klass=''){const extra=kind==='game'?'<th>Match</th><th>Club</th>':kind==='club'?'<th>Club</th>':rows.some(r=>r.season)?'<th>Year</th>':'';const valueLabel=metric==='average'&&kind!=='game'?'WARG/game':'WARG';return '<article class="card '+klass+'"><div class="card-head"><h2>'+esc(title)+'</h2>'+(href?'<a href="'+href+'">See full list</a>':'')+'</div><div class="table-wrap"><table><thead><tr><th>#</th><th>Player</th>'+extra+'<th>'+valueLabel+'</th></tr></thead><tbody>'+rankRows(rows,kind)+'</tbody></table></div></article>'}
-function listHref(view,role=''){const q=new URLSearchParams({view,competition,season,metric});if(role)q.set('role',role);return '/warg/list?'+q}
-function renderDashboard(data){let html=table('Top individual games',data.games,'game',listHref('games'),'wide');html+=table(season==='all'?'Top seasons':'Top players in '+season,data.seasons,'season',listHref('seasons'));if(data.careers.length)html+=table('Top careers',data.careers,'career',listHref('careers'));html+=table('Best player for each club',data.clubs.slice(0,10),'club',listHref('clubs'),'wide');const roleTitle={Back:'Backs',Half:'Halves',Hooker:'Hookers',Forward:'Forwards',Interchange:'Interchange players'};for(const [role,rows] of Object.entries(data.roles))html+=table('Top '+(roleTitle[role]||role),rows,'career',listHref(season==='all'?'careers':'seasons',role));content.innerHTML=html}
-function renderList(data){const title=data.role?'Top '+data.role+'s':data.view==='games'?'Top individual games':data.view==='seasons'?'Top seasons':data.view==='clubs'?'Club careers':'Top careers';content.innerHTML=table(title,data.rows,data.view==='games'?'game':data.view==='clubs'?'club':'career','', 'full')+'<div class="card full pager"><a class="btn" href="/warg?competition='+competition+'&season='+encodeURIComponent(season)+'&metric='+metric+'">Back to dashboard</a><span>'+data.totalRows+' rows</span></div>'}
-async function load(){content.innerHTML='<div class="card full status">Loading ratings...</div>';const q=new URLSearchParams(params);q.set('mode',mode);q.set('competition',competition);q.set('season',season);const res=await fetch('/api/warg?'+q,{cache:'no-store'});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||'Unable to load ratings');if(!seasonSelect.dataset.ready){for(const year of data.years)seasonSelect.insertAdjacentHTML('beforeend','<option value="'+year+'">'+year+'</option>');seasonSelect.dataset.ready='1'}seasonSelect.value=season;document.getElementById('note').textContent=data.methodology+' · Generated '+new Date(data.metadata.generated_at_utc).toLocaleString()+' · Regular-season '+competition+' only.';mode==='list'?renderList(data):renderDashboard(data)}
+function listHref(view,role='',stage=''){const q=new URLSearchParams({view,competition,season,metric});if(role)q.set('role',role);if(stage)q.set('stage',stage);return '/warg/list?'+q}
+function renderDashboard(data){let html=table('Top individual games',data.games,'game',listHref('games'),'wide');html+=table('Top finals performances',data.finals,'game',listHref('games','','finals'));html+=table('Top grand-final performances',data.grandFinals,'game',listHref('games','','grand_final'));html+=table(season==='all'?'Top seasons':'Top players in '+season,data.seasons,'season',listHref('seasons'));if(data.careers.length)html+=table('Top careers',data.careers,'career',listHref('careers'));html+=table('Best player for each club',data.clubs.slice(0,10),'club',listHref('clubs'),'wide');const roleTitle={Back:'Backs',Half:'Halves',Hooker:'Hookers',Forward:'Forwards',Interchange:'Interchange players'};for(const [role,rows] of Object.entries(data.roles))html+=table('Top '+(roleTitle[role]||role),rows,'career',listHref(season==='all'?'careers':'seasons',role));content.innerHTML=html}
+function renderList(data){const title=data.role?'Top '+data.role+'s':data.view==='games'?(data.stage==='grand_final'?'Top grand-final performances':data.stage==='finals'?'Top finals performances':'Top individual games'):data.view==='seasons'?'Top seasons':data.view==='clubs'?'Club careers':'Top careers';content.innerHTML=table(title,data.rows,data.view==='games'?'game':data.view==='clubs'?'club':'career','', 'full')+'<div class="card full pager"><a class="btn" href="/warg?competition='+competition+'&season='+encodeURIComponent(season)+'&metric='+metric+'">Back to dashboard</a><span>'+data.totalRows+' rows</span></div>'}
+async function load(){content.innerHTML='<div class="card full status">Loading ratings...</div>';const q=new URLSearchParams(params);q.set('mode',mode);q.set('competition',competition);q.set('season',season);const res=await fetch('/api/warg?'+q,{cache:'no-store'});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.error||'Unable to load ratings');if(!seasonSelect.dataset.ready){for(const year of data.years)seasonSelect.insertAdjacentHTML('beforeend','<option value="'+year+'">'+year+'</option>');seasonSelect.dataset.ready='1'}seasonSelect.value=season;document.getElementById('note').textContent=data.methodology+' · Generated '+new Date(data.metadata.generated_at_utc).toLocaleString()+' · Finals are scored with frozen regular-season parameters and excluded from season/career totals.';mode==='list'?renderList(data):renderDashboard(data)}
 seasonSelect.addEventListener('change',()=>{season=seasonSelect.value;const next=new URL(location.href);next.searchParams.set('season',season);history.replaceState(null,'',next);load().catch(fail)});function fail(e){content.innerHTML='<div class="card full status">'+esc(e.message||e)+'</div>'}load().then(()=>{if(metric==='average')document.getElementById('note').textContent+=' · Season lists require '+(competition==='NRLW'?'3':'10')+' appearances; career lists require 10.'}).catch(fail);
 document.querySelectorAll('[data-metric]').forEach(button=>{button.classList.toggle('active',button.dataset.metric===metric);button.addEventListener('click',()=>{const next=new URL(location.href);next.searchParams.set('metric',button.dataset.metric);location.href=next.toString()})});
 document.querySelectorAll('[data-competition]').forEach(button=>{button.classList.toggle('active',button.dataset.competition===competition);button.addEventListener('click',()=>{const next=new URL(location.href);next.searchParams.set('competition',button.dataset.competition);next.searchParams.set('season','all');location.href=next.toString()})});
