@@ -343,6 +343,10 @@ $serviceConfig = [ordered]@{
   tunnelHostname = $effectiveTunnelHostname
   tunnelConfigPath = $(if ($tunnelRequested) { $installedTunnelConfigPath } else { "" })
   cloudflaredPath = $(if ($tunnelRequested) { $installedCloudflaredPath } else { "" })
+  publicAvailabilityUrl = $(if ($tunnelRequested) { "https://$effectiveTunnelHostname/" } else { "" })
+  publicAvailabilityIntervalMs = 60000
+  publicAvailabilityTimeoutMs = 10000
+  publicAvailabilityFailureThreshold = 3
 }
 $serviceConfig | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $paths.Config "service.json") -Encoding utf8
 Set-Content -LiteralPath (Join-Path $paths.Control "desired-state.txt") -Value "running" -Encoding ascii

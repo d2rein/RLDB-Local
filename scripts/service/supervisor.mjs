@@ -34,6 +34,12 @@ let reconcileInFlight = false;
 let statusWriteSequence = 0;
 let restartToken = await readText(restartRequestPath);
 let updateToken = await readText(updateRequestPath);
+const publicAvailability = {
+  lastCheckedAtUtc: null,
+  lastSuccessAtUtc: null,
+  consecutiveFailures: 0,
+  lastError: null,
+};
 
 const services = [
   {
@@ -123,8 +129,57 @@ async function reconcile() {
       if (!children.get(service.name)?.process) startService(service);
     }
     await maybeRunUpdate();
+    await maybeCheckPublicAvailability();
   }
   await writeStatus(desiredState);
+}
+
+async function maybeCheckPublicAvailability() {
+  if (!config.tunnelEnabled) return;
+  const intervalMs = Number(config.publicAvailabilityIntervalMs ?? 60000);
+  const threshold = Number(config.publicAvailabilityFailureThreshold ?? 3);
+  const previous = publicAvailability.lastCheckedAtUtc
+    ? Date.parse(publicAvailability.lastCheckedAtUtc)
+    : 0;
+  if (Date.now() - previous < intervalMs) return;
+
+  const url = String(config.publicAvailabilityUrl || `https://${config.tunnelHostname}/`);
+  publicAvailability.lastCheckedAtUtc = new Date().toISOString();
+  try {
+    // Authentication responses and redirects both prove that Cloudflare can
+    // reach the origin.  The probe is about route availability, not login.
+    await fetch(url, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(Number(config.publicAvailabilityTimeoutMs ?? 10000)),
+    });
+    if (publicAvailability.consecutiveFailures > 0) {
+      log("public_availability_recovered", {
+        url,
+        failures: publicAvailability.consecutiveFailures,
+      });
+    }
+    publicAvailability.lastSuccessAtUtc = new Date().toISOString();
+    publicAvailability.consecutiveFailures = 0;
+    publicAvailability.lastError = null;
+  } catch (error) {
+    publicAvailability.consecutiveFailures += 1;
+    publicAvailability.lastError = error instanceof Error ? error.message : String(error);
+    log("public_availability_failed", {
+      url,
+      failures: publicAvailability.consecutiveFailures,
+      message: publicAvailability.lastError,
+    });
+    if (publicAvailability.consecutiveFailures < threshold) return;
+
+    const tunnel = children.get("tunnel");
+    const tunnelService = services.find((service) => service.name === "tunnel");
+    if (tunnel?.process && tunnelService) {
+      log("public_availability_restarting_tunnel", { url, failures: publicAvailability.consecutiveFailures });
+      await stopChild("tunnel", tunnel.process);
+      startService(tunnelService);
+    }
+    publicAvailability.consecutiveFailures = 0;
+  }
 }
 
 async function maybeRunUpdate() {
@@ -318,6 +373,7 @@ async function writeStatus(desiredState) {
     releaseRoot: config.releaseRoot,
     databasePath: config.databasePath,
     update: await readUpdateStatus(),
+    publicAvailability,
     services: Object.fromEntries(
       services.map((service) => {
         const entry = children.get(service.name) || {};

@@ -69,6 +69,12 @@ The supervisor reads command files from `C:\RLDB\control`. It restarts crashed
 backend or telemetry children automatically. The scheduled task restarts the
 supervisor if the supervisor itself exits.
 
+When a tunnel is installed, the supervisor also probes its public hostname
+once per minute. Three consecutive route failures restart only `cloudflared`;
+the database and backend remain running. Probe state is included in
+`rldb-status.ps1` output and recovery/failure events are written to the
+supervisor log.
+
 ## Weekly data update
 
 The candidate independently fetches and imports NRL and NRLW data each Monday
